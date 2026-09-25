@@ -1,0 +1,3564 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>狸樂聚｜系統衣櫃快速估價</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  input { font-family: inherit; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+
+const { useState, useMemo, useEffect, useRef } = React;
+
+const Icon = ({ children, size = 16, style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: -3, ...style }}>
+    {children}
+  </svg>
+);
+const Ruler = (p) => <Icon {...p}><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></Icon>;
+const Sparkles = (p) => <Icon {...p}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></Icon>;
+const Truck = (p) => <Icon {...p}><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L18 8h-4v9h1"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></Icon>;
+const Wrench = (p) => <Icon {...p}><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4l-6.1 6.1a1.5 1.5 0 0 0 2.1 2.1l6.1-6.1a4 4 0 1 1 5.4-5.4Z"/></Icon>;
+const RotateCcw = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></Icon>;
+const Plus = (p) => <Icon {...p}><path d="M12 5v14M5 12h14"/></Icon>;
+const Trash2 = (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></Icon>;
+const ChevronDown = (p) => <Icon {...p}><path d="m6 9 6 6 6-6"/></Icon>;
+const ChevronUp = (p) => <Icon {...p}><path d="m18 15-6-6-6 6"/></Icon>;
+const User = (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+const MapPin = (p) => <Icon {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></Icon>;
+const Download = (p) => <Icon {...p}><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></Icon>;
+const Share2 = (p) => <Icon {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 3.9M15.4 6.6 8.6 10.5"/></Icon>;
+const Upload = (p) => <Icon {...p}><path d="M12 21V9m0 0-4 4m4-4 4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></Icon>;
+const Undo2 = (p) => <Icon {...p}><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></Icon>;
+const Check = (p) => <Icon {...p}><path d="M20 6 9 17l-5-5"/></Icon>;
+const X = (p) => <Icon {...p}><path d="M18 6 6 18M6 6l12 12"/></Icon>;
+
+
+/* ---------------------------------------------------------------
+   狸樂聚｜系統衣櫃快速估價 — MVP prototype v2
+   多空間（案場內多個櫃體）＋ 客戶資料 ＋ 手機版底部估價面板
+----------------------------------------------------------------*/
+
+const NAVY = "#1B2A4A";
+const GOLD = "#C9A84C";
+const PAPER = "#F6F3EC";
+
+const MODULES = [
+  { code: "W40-S", category: "SHELF", name: "層板櫃", width: 40, cost: 4300, price: 6500 },
+  { code: "W60-S", category: "SHELF", name: "層板櫃", width: 60, cost: 5500, price: 8300 },
+  { code: "W80-S", category: "SHELF", name: "層板櫃", width: 80, cost: 6700, price: 10200 },
+  { code: "W90-S", category: "SHELF", name: "層板櫃", width: 90, cost: 7400, price: 11200 },
+  { code: "W100-S", category: "SHELF", name: "層板櫃", width: 100, cost: 8100, price: 12300 },
+  { code: "W40-H", category: "HANGING", name: "單吊衣櫃", width: 40, cost: 4200, price: 6400 },
+  { code: "W60-H", category: "HANGING", name: "單吊衣櫃", width: 60, cost: 5400, price: 8200 },
+  { code: "W80-H", category: "HANGING", name: "單吊衣櫃", width: 80, cost: 6500, price: 9900 },
+  { code: "W90-H", category: "HANGING", name: "單吊衣櫃", width: 90, cost: 7200, price: 10900 },
+  { code: "W100-H", category: "HANGING", name: "單吊衣櫃", width: 100, cost: 7900, price: 12000 },
+  { code: "W40-DH", category: "DOUBLE_HANGING", name: "雙吊衣櫃", width: 40, cost: 4500, price: 6800 },
+  { code: "W60-DH", category: "DOUBLE_HANGING", name: "雙吊衣櫃", width: 60, cost: 5700, price: 8600 },
+  { code: "W80-DH", category: "DOUBLE_HANGING", name: "雙吊衣櫃", width: 80, cost: 6800, price: 10300 },
+  { code: "W90-DH", category: "DOUBLE_HANGING", name: "雙吊衣櫃", width: 90, cost: 7500, price: 11400 },
+  { code: "W100-DH", category: "DOUBLE_HANGING", name: "雙吊衣櫃", width: 100, cost: 8200, price: 12500 },
+  { code: "W40-LH", category: "LONG_HANGING", name: "長衣櫃", width: 40, cost: 4100, price: 6200 },
+  { code: "W60-LH", category: "LONG_HANGING", name: "長衣櫃", width: 60, cost: 5200, price: 7900 },
+  { code: "W80-LH", category: "LONG_HANGING", name: "長衣櫃", width: 80, cost: 6300, price: 9600 },
+  { code: "W60-D2", category: "DRAWER", name: "雙抽衣櫃", width: 60, cost: 7300, price: 11000 },
+  { code: "W80-D2", category: "DRAWER", name: "雙抽衣櫃", width: 80, cost: 8500, price: 12800 },
+  { code: "W80-D3", category: "DRAWER", name: "三抽衣櫃", width: 80, cost: 9300, price: 14000 },
+  { code: "W100-D3", category: "DRAWER", name: "三抽衣櫃", width: 100, cost: 10600, price: 16000 },
+  { code: "W80-G", category: "DISPLAY", name: "玻璃展示衣櫃", width: 80, cost: 12500, price: 19000 },
+];
+
+const DOORS = [
+  { code: "D-NONE", name: "無門開放式", cost: 0, price: 0 },
+  { code: "D-STD", name: "標準同色系統板門", cost: 650, price: 1000 },
+  { code: "D-SLIDE", name: "滑門", cost: 2200, price: 3200 }, // placeholder — no real slide-door price was given
+];
+
+const TRANSPORT = [
+  { code: "TPE", name: "台北", price: 3000 },
+  { code: "NTP", name: "新北", price: 3500 },
+  { code: "TY", name: "桃園", price: 4000 },
+];
+
+// Board colors, transcribed from the supplier catalog (材料花色, pages 02–11).
+// grade = last letter of the code, matches the 價格表(含稅) column (A/C/D/E/F/G).
+// Per the supplier's surcharge rule: E and F grade colors add 15% to the material cost.
+const MATERIAL_COLORS = [
+  { code: "M-15A", name: "潔白", grade: "A" },
+  { code: "M-45C", name: "阿里山黃金榆", grade: "C" },
+  { code: "M-47C", name: "浮雕雪印柚木", grade: "C" },
+  { code: "M-87C", name: "潔白浮雕", grade: "C" },
+  { code: "M-90C", name: "加拿大橡木", grade: "C" },
+  { code: "M-124C", name: "北美胡桃木", grade: "C" },
+  { code: "M-125C", name: "摩登清水模", grade: "C" },
+  { code: "M-127C", name: "棉織鐵灰", grade: "C" },
+  { code: "M-128C", name: "北美梣木", grade: "C" },
+  { code: "M-158C", name: "銀狐", grade: "C" },
+  { code: "M-159C", name: "瑞士榆木", grade: "C" },
+  { code: "M-160C", name: "香楓", grade: "C" },
+  { code: "M-175C", name: "粉灰", grade: "C" },
+  { code: "M-174C", name: "棉織米白", grade: "C" },
+  { code: "M-172C", name: "卡拉拉白", grade: "C" },
+  { code: "M-173C", name: "布隆橡木洗白", grade: "C" },
+  { code: "M-176C", name: "精選棕櫚", grade: "C" },
+  { code: "M-177C", name: "北歐白橡木", grade: "C" },
+  { code: "J-108C", name: "南卡原始橡木", grade: "C" },
+  { code: "J-111C", name: "雪印梣木", grade: "C" },
+  { code: "J-117C", name: "黑部山", grade: "C" },
+  { code: "J-118C", name: "白岩川", grade: "C" },
+  { code: "J-167C", name: "可可", grade: "C" },
+  { code: "J-132C", name: "布紋灰", grade: "C" },
+  { code: "J-116C", name: "自然義橡", grade: "C" },
+  { code: "G-191C", name: "瑞士榆木洗白", grade: "C" },
+  { code: "G-192C", name: "極地灰梣", grade: "C" },
+  { code: "G-193C", name: "冰島白橡", grade: "C" },
+  { code: "K-163D", name: "古典榆木", grade: "D" },
+  { code: "K-184D", name: "玄米", grade: "D" },
+  { code: "K-185D", name: "粉玫", grade: "D" },
+  { code: "K-183D", name: "皇家奶茶", grade: "D" },
+  { code: "K-186D", name: "薄荷綠", grade: "D" },
+  { code: "K-187D", name: "抹茶綠", grade: "D" },
+  { code: "K-188D", name: "天藍", grade: "D" },
+  { code: "K-178D", name: "銀灰", grade: "D" },
+  { code: "K-181D", name: "暖灰", grade: "D" },
+  { code: "H-1267E", name: "鄉村梣木", grade: "E" },
+  { code: "H-3760E", name: "白榆木", grade: "E" },
+  { code: "H-3700E", name: "鄉村胡桃木", grade: "E" },
+  { code: "H-3730E", name: "自然山核桃", grade: "E" },
+  { code: "H-1277E", name: "自然白橡木", grade: "E" },
+  { code: "H-3157E", name: "消光維琴察橡木", grade: "E" },
+  { code: "H-3433E", name: "冰白奧蘭松木", grade: "E" },
+  { code: "H-3158E", name: "灰色維琴察橡木", grade: "E" },
+  { code: "U-780E", name: "花崗岩灰", grade: "E" },
+  { code: "U-702E", name: "米灰色羊絨", grade: "E" },
+  { code: "F-649E", name: "白色珪藻土", grade: "E" },
+  { code: "F-433E", name: "亞麻黑灰色", grade: "E" },
+  { code: "H-3195E", name: "細絲白木紋", grade: "E" },
+  { code: "U-727E", name: "石頭灰", grade: "E" },
+  { code: "U-705E", name: "安哥拉灰", grade: "E" },
+  { code: "H-1377F", name: "奧爾良沙棕橡木", grade: "F" },
+  { code: "H-1386F", name: "卡塞拉棕色橡木", grade: "F" },
+  { code: "H-1379F", name: "奧爾良灰棕橡木", grade: "F" },
+  { code: "H-3311F", name: "庫內奧洗白橡木", grade: "F" },
+  { code: "U-998F", name: "曜黑松木", grade: "F" },
+  { code: "P-179G", name: "帕洛瑪灰", grade: "G" },
+  { code: "P-180G", name: "皎月白", grade: "G" },
+  { code: "P-189G", name: "鈦金灰", grade: "G" },
+  { code: "P-190G", name: "寧靜黑", grade: "G" },
+];
+const MATERIAL_GRADES = ["A", "C", "D", "E", "F", "G"];
+function colorSurchargeRate(grade) {
+  return grade === "E" || grade === "F" ? 0.15 : 0;
+}
+
+const CATEGORY_META = {
+  SHELF: { label: "層板", color: "#C9A84C", widths: [100, 90, 80, 60, 40] },
+  HANGING: { label: "單吊衣", color: "#6B8CAE", widths: [100, 90, 80, 60, 40] },
+  DOUBLE_HANGING: { label: "雙吊衣", color: "#4A7C7C", widths: [100, 90, 80, 60, 40] },
+  LONG_HANGING: { label: "長衣", color: "#8B7355", widths: [80, 60, 40] },
+  DRAWER: { label: "抽屜", color: "#A85C4A", widths: [100, 80, 60] },
+  DISPLAY: { label: "展示", color: "#7FA8C9", widths: [80] },
+};
+
+const TEMPLATES = [
+  { id: "hanging", name: "基本吊衣型", pattern: ["HANGING"] },
+  { id: "double", name: "雙吊衣型", pattern: ["DOUBLE_HANGING"] },
+  { id: "long", name: "長衣型", pattern: ["LONG_HANGING"] },
+  { id: "shelf", name: "層板型", pattern: ["SHELF"] },
+  { id: "drawer_mix", name: "抽屜型", pattern: ["HANGING", "DRAWER", "SHELF"] },
+  { id: "couple", name: "夫妻衣櫃", pattern: null },
+  { id: "display", name: "精品展示櫃", pattern: ["DISPLAY"] },
+];
+
+const MAX_FILLER = 5;
+
+function intersectWidths(categories) {
+  const sets = categories.map((c) => CATEGORY_META[c].widths);
+  return sets[0].filter((w) => sets.every((s) => s.includes(w))).sort((a, b) => b - a);
+}
+
+function decompose(total, widths) {
+  if (total <= 0) return { pieces: [], filler: 0 };
+  const dp = new Array(total + 1).fill(-1);
+  dp[0] = 0;
+  for (let s = 1; s <= total; s++) {
+    for (const w of widths) {
+      if (s >= w && dp[s - w] !== -1) {
+        const cand = dp[s - w] + 1;
+        if (dp[s] === -1 || cand < dp[s]) dp[s] = cand;
+      }
+    }
+  }
+  let best = -1;
+  const floor = Math.max(0, total - MAX_FILLER);
+  for (let s = total; s >= floor; s--) {
+    if (dp[s] !== -1) { best = s; break; }
+  }
+  if (best === -1) {
+    for (let s = total; s >= 0; s--) {
+      if (dp[s] !== -1) { best = s; break; }
+    }
+  }
+  const pieces = [];
+  let remaining = best;
+  while (remaining > 0) {
+    for (const w of widths) {
+      if (remaining >= w && dp[remaining - w] === dp[remaining] - 1) {
+        pieces.push(w);
+        remaining -= w;
+        break;
+      }
+    }
+  }
+  return { pieces, filler: total - best };
+}
+
+function buildModules(templateId, totalWidth) {
+  const tpl = TEMPLATES.find((t) => t.id === templateId);
+  if (templateId === "couple") {
+    const leftPattern = ["DOUBLE_HANGING", "DRAWER"];
+    const rightPattern = ["LONG_HANGING", "SHELF"];
+    const leftWidths = intersectWidths(leftPattern);
+    const rightWidths = intersectWidths(rightPattern);
+    const leftTotal = Math.round(totalWidth / 2 / 10) * 10;
+    const rightTotal = totalWidth - leftTotal;
+    const left = decompose(leftTotal, leftWidths);
+    const right = decompose(rightTotal, rightWidths);
+    const leftMods = left.pieces.map((w, i) => ({ category: leftPattern[i % leftPattern.length], width: w }));
+    const rightMods = right.pieces.map((w, i) => ({ category: rightPattern[i % rightPattern.length], width: w }));
+    return { modules: [...leftMods, ...rightMods], filler: left.filler + right.filler, split: { leftTotal, rightTotal } };
+  }
+  const widths = intersectWidths(tpl.pattern);
+  const { pieces, filler } = decompose(totalWidth, widths);
+  const modules = pieces.map((w, i) => ({ category: tpl.pattern[i % tpl.pattern.length], width: w }));
+  return { modules, filler, split: null };
+}
+
+function findModuleData(category, width) {
+  return MODULES.find((m) => m.category === category && m.width === width);
+}
+
+function nextValidCategory(currentCategory, width) {
+  const cats = Object.keys(CATEGORY_META);
+  const idx = cats.indexOf(currentCategory);
+  for (let step = 1; step <= cats.length; step++) {
+    const cand = cats[(idx + step) % cats.length];
+    if (CATEGORY_META[cand].widths.includes(width)) return cand;
+  }
+  return currentCategory;
+}
+
+// Placeholder — no real basket price was given, using the same figure the old accessories
+// list had for 拉籃 before it was removed.
+const BASKET_UNIT_PRICE = 2000;
+
+function computeSpace(space) {
+  const built = buildModules(space.templateId, space.width);
+  const modules = built.modules.map((m, i) => {
+    const category = space.overrides[i] || m.category;
+    const data = findModuleData(category, m.width) || findModuleData(m.category, m.width);
+    return { ...m, category: data.category, data };
+  });
+  const door = DOORS.find((d) => d.code === space.doorCode);
+  const color = MATERIAL_COLORS.find((c) => c.code === space.colorCode) || MATERIAL_COLORS[0];
+  const cabinetPrice = modules.reduce((sum, m) => sum + m.data.price, 0);
+  const doorEligible = modules.filter((m) => m.category !== "OPEN" && m.category !== "DISPLAY");
+  const doorPrice = doorEligible.length * door.price;
+  const basketCount = Object.values(space.basketOverrides || {}).reduce((sum, arr) => sum + (arr ? arr.length : 0), 0);
+  const basketPrice = basketCount * BASKET_UNIT_PRICE;
+  // 板材顏色加價：E/F 色只對板材本體（櫃體＋門片）加價15%
+  const surchargeRate = colorSurchargeRate(color.grade);
+  const colorSurcharge = Math.round((cabinetPrice + doorPrice) * surchargeRate);
+  const subtotal = cabinetPrice + doorPrice + basketPrice + colorSurcharge;
+  return { built, modules, door, color, cabinetPrice, doorPrice, basketCount, basketPrice, colorSurcharge, subtotal };
+}
+
+let idCounter = 2;
+function makeSpace(name, overrides = {}) {
+  return {
+    id: idCounter++,
+    name,
+    width: 200,
+    templateId: "hanging",
+    doorCode: "D-STD",
+    colorCode: "M-15A",
+    overrides: {},
+    drawerOverrides: {},
+    basketOverrides: {},
+    ...overrides,
+  };
+}
+
+const GLOBAL_CSS = `
+  .app-grid { display: block; }
+  .summary-panel {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: ${NAVY}; color: #fff; border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.28);
+    max-height: 78vh; display: flex; flex-direction: column;
+  }
+  .summary-panel .collapsed-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; cursor: pointer;
+  }
+  .summary-panel .full-breakdown { display: none; overflow-y: auto; padding: 0 20px 20px; }
+  .summary-panel.expanded .full-breakdown { display: block; }
+  .summary-panel.expanded .collapsed-bar { border-bottom: 1px solid rgba(255,255,255,0.12); }
+  .mobile-close { display: inline-flex; }
+  @media (min-width: 900px) {
+    .app-grid { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 24px; align-items: start; }
+    .summary-panel {
+      position: sticky; top: 20px; left: auto; right: auto; bottom: auto;
+      border-radius: 14px; box-shadow: none; max-height: none;
+    }
+    .summary-panel .collapsed-bar { display: none; }
+    .summary-panel .full-breakdown { display: block !important; padding: 22px 20px; }
+  }
+  @media print {
+    .no-print { display: none !important; }
+    body, html { background: #fff !important; }
+  }
+`;
+
+/* ---------------------------------------------------------------
+   案場平面圖 — upload a floor-plan image, calibrate a known real-world
+   length against it, then trace room outlines to get a rough area
+   (m² / 坪). All client-side; nothing is uploaded anywhere.
+----------------------------------------------------------------*/
+function polygonAreaPx2(points) {
+  let sum = 0;
+  for (let i = 0; i < points.length; i++) {
+    const { x: x1, y: y1 } = points[i];
+    const { x: x2, y: y2 } = points[(i + 1) % points.length];
+    sum += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(sum) / 2;
+}
+
+function matchRoomTypeCode(name, usedCodes) {
+  if (name.includes("玄關")) return usedCodes.has("ENTRANCE") ? null : "ENTRANCE";
+  if (name.includes("客廳")) return usedCodes.has("LIVING") ? null : "LIVING";
+  if (name.includes("餐廳")) return usedCodes.has("DINING") ? null : "DINING";
+  if (name.includes("主臥")) return usedCodes.has("MASTER") ? null : "MASTER";
+  if (name.includes("次臥") || name.includes("客房") || name.includes("小孩房")) {
+    if (!usedCodes.has("BED_A")) return "BED_A";
+    if (!usedCodes.has("BED_B")) return "BED_B";
+    return null;
+  }
+  return null; // 廚房／衛浴／書房／儲藏室等，目前系統的空間類型清單裡沒有，無法自動套用
+}
+
+function FloorPlanTool({ floorPlan, setFloorPlan, measuringRoom, onMeasured, onCancelMeasure, updateRoomWork }) {
+  const [mode, setMode] = useState("idle"); // idle | calibrate
+  const [calibPoints, setCalibPoints] = useState([]);
+  const [calibInput, setCalibInput] = useState("");
+  const [currentPolygon, setCurrentPolygon] = useState([]);
+  const svgRef = useRef(null);
+  const canvasRef = useRef(null);
+  const drawing = !!measuringRoom;
+  const drawingLength = drawing && (measuringRoom.kind === "beam" || measuringRoom.kind === "curtain");
+  const [aiRecognizing, setAiRecognizing] = useState(false);
+  const [aiResult, setAiResult] = useState(null); // { rooms: [{name, polygon, matchedCode}], notes }
+  const [aiError, setAiError] = useState(null);
+  const [aiSelected, setAiSelected] = useState({}); // { index: boolean }
+
+  const recognizeFloorPlan = async () => {
+    setAiRecognizing(true);
+    setAiError(null);
+    setAiResult(null);
+    try {
+      const match = floorPlan.imageDataUrl.match(/^data:([^;]+);base64,(.*)$/);
+      if (!match) throw new Error("圖片格式無法解析");
+      const [, mediaType, base64] = match;
+      const res = await fetch("/api/recognize-floorplan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mediaType }),
+      });
+      const rawText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        throw new Error(`伺服器沒有回傳可用的內容（HTTP ${res.status}）。可能是函式逾時或設定問題，請到 Netlify 後台的 Functions 頁籤查看 recognize-floorplan 的 log。`);
+      }
+      if (!res.ok) {
+        const detail = data.raw ? `\n\n詳細內容：${JSON.stringify(data.raw).slice(0, 800)}` : "";
+        throw new Error((data.error || `辨識失敗（HTTP ${res.status}）`) + detail);
+      }
+      const usedCodes = new Set();
+      const withCodes = data.rooms.map((r) => {
+        const code = matchRoomTypeCode(r.name || "", usedCodes);
+        if (code) usedCodes.add(code);
+        return { ...r, matchedCode: code };
+      });
+      setAiResult({ rooms: withCodes, notes: data.notes });
+      const initSelected = {};
+      withCodes.forEach((r, i) => { if (r.matchedCode) initSelected[i] = true; });
+      setAiSelected(initSelected);
+    } catch (err) {
+      setAiError(err.message || "辨識時發生錯誤");
+    } finally {
+      setAiRecognizing(false);
+    }
+  };
+
+  const applyAiResults = () => {
+    if (!aiResult) return;
+    const newPolygons = { ...(floorPlan.roomPolygons || {}) };
+    aiResult.rooms.forEach((r, i) => {
+      if (!aiSelected[i] || !r.matchedCode || !Array.isArray(r.polygon) || r.polygon.length < 3) return;
+      const pxPoly = r.polygon.map(([rx, ry]) => ({ x: rx * floorPlan.naturalWidth, y: ry * floorPlan.naturalHeight }));
+      newPolygons[r.matchedCode] = pxPoly;
+      if (floorPlan.scaleCmPerPx) {
+        const areaCm2 = polygonAreaPx2(pxPoly) * floorPlan.scaleCmPerPx * floorPlan.scaleCmPerPx;
+        const ping = Number((areaCm2 / 10000 / 3.305785).toFixed(2));
+        updateRoomWork(r.matchedCode, { areaPing: ping });
+      }
+    });
+    setFloorPlan((prev) => ({ ...prev, roomPolygons: newPolygons }));
+    setAiResult(null);
+  };
+
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new window.Image();
+      img.onload = () => {
+        setFloorPlan({ imageDataUrl: reader.result, naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight, scaleCmPerPx: null });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // draw the floor plan into an offscreen canvas so clicks can sample real pixels to snap to
+  useEffect(() => {
+    if (!floorPlan || !floorPlan.imageDataUrl || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    canvas.width = floorPlan.naturalWidth;
+    canvas.height = floorPlan.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    const img = new window.Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0); };
+    img.src = floorPlan.imageDataUrl;
+  }, [floorPlan && floorPlan.imageDataUrl, floorPlan && floorPlan.naturalWidth, floorPlan && floorPlan.naturalHeight]);
+
+  // Snap a click to the nearest nearby line intersection (wall corner) instead of trusting the
+  // raw tap — floor-plan photos are drawn with fairly thin dark lines on a light background, so a
+  // pixel with a lot of dark neighbours in BOTH a horizontal and a vertical band is likely a corner.
+  const snapToIntersection = (px, py) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: px, y: py };
+    const R = 16;
+    const x0 = Math.max(0, Math.round(px - R));
+    const y0 = Math.max(0, Math.round(py - R));
+    const w = Math.min(canvas.width - x0, R * 2 + 1);
+    const h = Math.min(canvas.height - y0, R * 2 + 1);
+    if (w <= 4 || h <= 4) return { x: px, y: py };
+    let data;
+    try {
+      data = canvas.getContext("2d").getImageData(x0, y0, w, h).data;
+    } catch (err) {
+      return { x: px, y: py }; // e.g. tainted canvas — just fall back to the raw click
+    }
+    const isDark = (lx, ly) => {
+      if (lx < 0 || ly < 0 || lx >= w || ly >= h) return false;
+      const idx = (ly * w + lx) * 4;
+      const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      return lum < 150;
+    };
+    let candidates = [];
+    for (let ly = 2; ly < h - 2; ly++) {
+      for (let lx = 2; lx < w - 2; lx++) {
+        if (!isDark(lx, ly)) continue;
+        let hCount = 0, vCount = 0;
+        for (let d = -6; d <= 6; d++) {
+          if (isDark(lx + d, ly)) hCount++;
+          if (isDark(lx, ly + d)) vCount++;
+        }
+        const score = Math.min(hCount, vCount);
+        if (score >= 5) candidates.push({ lx, ly });
+      }
+    }
+    if (candidates.length === 0) return { x: px, y: py };
+    // A wall corner is usually drawn as two intersecting lines with some thickness, which can
+    // produce more than one qualifying pixel (e.g. the outer and inner face of the wall). Pick
+    // whichever candidate is closest to where the user actually tapped — since they're tracing
+    // a room from the inside, that's normally the inside corner, not the outer wall face.
+    let best = candidates[0], bestDist = Infinity;
+    candidates.forEach((c) => {
+      const d = Math.hypot(x0 + c.lx - px, y0 + c.ly - py);
+      if (d < bestDist) { bestDist = d; best = c; }
+    });
+    return { x: x0 + best.lx, y: y0 + best.ly };
+  };
+
+  const toImageCoords = (e) => {
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = floorPlan.naturalWidth / rect.width;
+    const scaleY = floorPlan.naturalHeight / rect.height;
+    const raw = { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+    return snapToIntersection(raw.x, raw.y);
+  };
+
+  const handleSvgClick = (e) => {
+    const p = toImageCoords(e);
+    if (mode === "calibrate") {
+      if (calibPoints.length < 2) setCalibPoints((prev) => [...prev, p]);
+      return;
+    }
+    if (!drawing || !floorPlan.scaleCmPerPx) return;
+    setCurrentPolygon((prev) => [...prev, p]);
+  };
+
+  const confirmCalibration = () => {
+    const cm = Number(calibInput);
+    if (!cm || calibPoints.length < 2) return;
+    const [p1, p2] = calibPoints;
+    const pxDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    if (pxDist === 0) return;
+    setFloorPlan((prev) => ({ ...prev, scaleCmPerPx: cm / pxDist }));
+    setCalibPoints([]);
+    setCalibInput("");
+    setMode("idle");
+  };
+
+  const undoPoint = () => {
+    if (mode === "calibrate") setCalibPoints((prev) => prev.slice(0, -1));
+    else if (drawing) setCurrentPolygon((prev) => prev.slice(0, -1));
+  };
+
+  const cancelCalibrate = () => {
+    setMode("idle");
+    setCalibPoints([]);
+    setCalibInput("");
+  };
+
+  const cancelDrawing = () => {
+    setCurrentPolygon([]);
+    if (onCancelMeasure) onCancelMeasure();
+  };
+
+  const finishArea = () => {
+    if (currentPolygon.length < 3 || !floorPlan.scaleCmPerPx) return;
+    const areaCm2 = polygonAreaPx2(currentPolygon) * floorPlan.scaleCmPerPx * floorPlan.scaleCmPerPx;
+    const ping = areaCm2 / 10000 / 3.305785;
+    const roomCode = measuringRoom.code;
+    const tracedPoints = currentPolygon;
+    setFloorPlan((prev) => ({ ...prev, roomPolygons: { ...(prev.roomPolygons || {}), [roomCode]: tracedPoints } }));
+    setCurrentPolygon([]);
+    if (onMeasured) onMeasured(Number(ping.toFixed(2)));
+  };
+
+  // 包樑 often turns corners — sum every segment of the traced path, not just a straight 2-point line.
+  const pathLengthCm = (points) => {
+    let cm = 0;
+    for (let i = 1; i < points.length; i++) {
+      cm += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    }
+    return cm * (floorPlan.scaleCmPerPx || 0);
+  };
+
+  const finishLength = () => {
+    if (currentPolygon.length < 2 || !floorPlan.scaleCmPerPx) return;
+    const cm = pathLengthCm(currentPolygon);
+    if (measuringRoom.kind === "beam") {
+      const roomCode = measuringRoom.code;
+      const tracedPoints = currentPolygon;
+      setFloorPlan((prev) => ({ ...prev, beamPaths: { ...(prev.beamPaths || {}), [roomCode]: tracedPoints } }));
+    }
+    setCurrentPolygon([]);
+    if (onMeasured) onMeasured(cm);
+  };
+
+  if (!floorPlan) {
+    return (
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>案場平面圖</div>
+        <label style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          border: "2px dashed #cfc7ac", borderRadius: 10, padding: "16px", cursor: "pointer", color: "#5b6478", fontSize: 13,
+        }}>
+          <Upload size={16} /> 上傳平面圖照片
+          <input type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
+        </label>
+      </div>
+    );
+  }
+
+  const dotR = floorPlan.naturalWidth / 160;
+  const lineW = Math.max(floorPlan.naturalWidth / 350, 1.5);
+
+  return (
+    <div>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>案場平面圖</div>
+
+      {drawing && (
+        <div style={{ background: NAVY, color: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>
+          正在為「{measuringRoom.name}」{measuringRoom.kind === "beam" ? "測量包樑長度" : measuringRoom.kind === "curtain" ? "測量窗簾盒長度" : "框選面積範圍"}
+        </div>
+      )}
+
+      <div style={{ position: "relative", width: "100%", borderRadius: 8, overflow: "hidden", border: "1px solid #e4ddc8" }}>
+        <img src={floorPlan.imageDataUrl} alt="平面圖" style={{ width: "100%", display: "block" }} />
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${floorPlan.naturalWidth} ${floorPlan.naturalHeight}`}
+          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: mode === "idle" && !drawing ? "default" : "crosshair" }}
+          onClick={handleSvgClick}
+        >
+          {currentPolygon.length > 0 && (
+            <polyline points={currentPolygon.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" stroke={NAVY} strokeWidth={lineW} />
+          )}
+          {currentPolygon.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={dotR} fill={NAVY} />)}
+          {calibPoints.length === 2 && <line x1={calibPoints[0].x} y1={calibPoints[0].y} x2={calibPoints[1].x} y2={calibPoints[1].y} stroke="#c0392b" strokeWidth={lineW} />}
+          {calibPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={dotR} fill="#c0392b" />)}
+        </svg>
+      </div>
+
+      {!drawing && mode === "idle" && (
+        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+          <button onClick={() => setMode("calibrate")} style={smallBtnStyle}>校正比例尺</button>
+          <button onClick={() => setFloorPlan(null)} style={{ ...smallBtnStyle, color: "#b0453a", borderColor: "#e0c4bd" }}>移除平面圖</button>
+          <button onClick={recognizeFloorPlan} disabled={aiRecognizing} style={{ ...smallBtnStyle, background: NAVY, color: "#fff", opacity: aiRecognizing ? 0.6 : 1 }}>
+            <Sparkles size={12} /> {aiRecognizing ? "AI 辨識中…" : "AI 辨識房間"}
+          </button>
+        </div>
+      )}
+
+      {aiError && (
+        <div style={{ marginTop: 8, background: "#fdf2f0", border: "1px solid #e0c4bd", borderRadius: 8, padding: 10 }}>
+          <p style={{ fontSize: 12, color: "#b0453a", margin: 0, whiteSpace: "pre-wrap" }}>{aiError}</p>
+        </div>
+      )}
+
+      {aiResult && (
+        <div style={{ marginTop: 8, background: "#fbf9f3", border: "1px solid #eee7d6", borderRadius: 8, padding: 10 }}>
+          <p style={{ fontSize: 12, color: "#5b6478", margin: "0 0 8px" }}>AI 判讀結果，請確認後套用（套用後仍可用「從平面圖框選」手動修正）：</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+            {aiResult.rooms.map((r, i) => (
+              <label key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: r.matchedCode ? "pointer" : "default", opacity: r.matchedCode ? 1 : 0.55 }}>
+                <input type="checkbox" disabled={!r.matchedCode} checked={!!aiSelected[i]} onChange={(e) => setAiSelected((prev) => ({ ...prev, [i]: e.target.checked }))} />
+                {r.name}
+                {r.matchedCode ? <span style={{ fontSize: 11, color: "#8a8f9c" }}>→ {(ROOM_TYPES.find((rt) => rt.code === r.matchedCode) || {}).name}</span> : <span style={{ fontSize: 11, color: "#b0453a" }}>（目前空間類型清單裡沒有這個房型，無法自動套用）</span>}
+              </label>
+            ))}
+          </div>
+          {aiResult.notes && <p style={{ fontSize: 11, color: "#b0aa90", marginBottom: 8 }}>AI 備註：{aiResult.notes}</p>}
+          {!floorPlan.scaleCmPerPx && <p style={{ fontSize: 11.5, color: "#b0453a", marginBottom: 8 }}>尚未校正比例尺，套用後會先存範圍，坪數要等校正完成才會自動算出。</p>}
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={applyAiResults} style={{ ...smallBtnStyle, background: NAVY, color: "#fff" }}><Check size={12} /> 套用勾選的房間</button>
+            <button onClick={() => setAiResult(null)} style={smallBtnStyle}><X size={12} /> 取消</button>
+          </div>
+        </div>
+      )}
+
+      {!drawing && mode === "calibrate" && (
+        <div style={{ marginTop: 8, background: "#fbf9f3", border: "1px solid #eee7d6", borderRadius: 8, padding: 10 }}>
+          <p style={{ fontSize: 12, color: "#5b6478", margin: "0 0 8px" }}>在圖上點兩下,標出一段你知道實際長度的線（例如一面牆）。</p>
+          {calibPoints.length === 2 && (
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+              <input value={calibInput} onChange={(e) => setCalibInput(e.target.value)} placeholder="這段實際長度 (cm)" inputMode="numeric"
+                style={{ flex: 1, padding: "7px 10px", borderRadius: 6, border: "1px solid #d8d2c2", fontSize: 13 }} />
+              <button onClick={confirmCalibration} style={{ ...smallBtnStyle, background: NAVY, color: "#fff" }}><Check size={13} /></button>
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={undoPoint} style={smallBtnStyle}><Undo2 size={12} /> 回上一點</button>
+            <button onClick={cancelCalibrate} style={smallBtnStyle}><X size={12} /> 取消</button>
+          </div>
+        </div>
+      )}
+
+      {drawing && !floorPlan.scaleCmPerPx && (
+        <div style={{ marginTop: 8, background: "#fdf2f0", border: "1px solid #e0c4bd", borderRadius: 8, padding: 10 }}>
+          <p style={{ fontSize: 12.5, color: "#b0453a", margin: "0 0 8px" }}>請先「校正比例尺」才能測量。</p>
+          <button onClick={cancelDrawing} style={smallBtnStyle}><X size={12} /> 取消</button>
+        </div>
+      )}
+
+      {drawing && floorPlan.scaleCmPerPx && drawingLength && (
+        <div style={{ marginTop: 8, background: "#fbf9f3", border: "1px solid #eee7d6", borderRadius: 8, padding: 10 }}>
+          <p style={{ fontSize: 12, color: "#5b6478", margin: "0 0 8px" }}>依序點選「{measuringRoom.name}」{measuringRoom.kind === "curtain" ? "窗簾盒" : "包樑"}的每個轉折點（至少2點),會自動加總每一段的長度,完成後按「完成」。</p>
+          {currentPolygon.length >= 2 && (
+            <p style={{ fontSize: 12.5, fontWeight: 700, color: NAVY, margin: "0 0 8px" }}>目前總長：{pathLengthCm(currentPolygon).toFixed(1)}cm（約{(pathLengthCm(currentPolygon) / CM_PER_CHI).toFixed(2)}尺）</p>
+          )}
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={undoPoint} style={smallBtnStyle}><Undo2 size={12} /> 回上一點</button>
+            <button onClick={finishLength} disabled={currentPolygon.length < 2} style={{ ...smallBtnStyle, background: NAVY, color: "#fff", opacity: currentPolygon.length < 2 ? 0.4 : 1 }}>
+              <Check size={12} /> 完成
+            </button>
+            <button onClick={cancelDrawing} style={smallBtnStyle}><X size={12} /> 取消</button>
+          </div>
+        </div>
+      )}
+
+      {drawing && floorPlan.scaleCmPerPx && !drawingLength && (
+        <div style={{ marginTop: 8, background: "#fbf9f3", border: "1px solid #eee7d6", borderRadius: 8, padding: 10 }}>
+          <p style={{ fontSize: 12, color: "#5b6478", margin: "0 0 8px" }}>依序點選「{measuringRoom.name}」的每個角點（至少3點),完成後按「完成」。點擊時會自動吸附到附近偵測到的線條交點。</p>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={undoPoint} style={smallBtnStyle}><Undo2 size={12} /> 回上一點</button>
+            <button onClick={finishArea} disabled={currentPolygon.length < 3} style={{ ...smallBtnStyle, background: NAVY, color: "#fff", opacity: currentPolygon.length < 3 ? 0.4 : 1 }}>
+              <Check size={12} /> 完成
+            </button>
+            <button onClick={cancelDrawing} style={smallBtnStyle}><X size={12} /> 取消</button>
+          </div>
+        </div>
+      )}
+
+      {floorPlan.scaleCmPerPx && !drawing && mode === "idle" && (
+        <p style={{ fontSize: 11, color: "#8a8f9c", marginTop: 6 }}>已校正比例尺（可重新校正以覆蓋）</p>
+      )}
+      <p style={{ fontSize: 10.5, color: "#b0aa90", marginTop: 8 }}>面積／長度為依平面圖描繪估算的概略值，僅供估價參考，實際請以現場丈量為準。</p>
+    </div>
+  );
+}
+
+const smallBtnStyle = {
+  display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600,
+  padding: "7px 12px", borderRadius: 7, border: "1px solid #d8d2c2", background: "#fff", color: NAVY, cursor: "pointer",
+};
+
+const ROOM_TYPES = [
+  { code: "ENTRANCE", name: "玄關" },
+  { code: "LIVING", name: "客廳" },
+  { code: "DINING", name: "餐廳" },
+  { code: "MASTER", name: "主臥" },
+  { code: "BED_A", name: "次臥A" },
+  { code: "BED_B", name: "次臥B" },
+];
+
+// Placeholder rates — no real ceiling/flooring price sheet was supplied. Replace price
+// with the actual contracted unit prices before using this for a real quote.
+// 包樑 (beam-wrap) is priced per 尺 (linear), not per 坪 (area), since it follows the beam's length.
+const CM_PER_CHI = 30.3; // 台尺
+const CEILING_TYPES = [
+  { code: "NONE", name: "不施作", price: 0, unit: "ping" },
+  { code: "BEAM_WRAP", name: "包樑", price: 400, unit: "chi" },
+  // 平釘天花板 $4,200/坪 + 天花板批土打磨刷漆 $1,600/坪（實際報價單分兩行，這裡合併成一口價）
+  { code: "FLAT", name: "平釘（含批土刷漆）", price: 5800, unit: "ping" },
+  { code: "FEATURE", name: "造型", price: 4500, unit: "ping" },
+];
+const FLOOR_PRODUCT = { name: "卡扣式超耐磨木地板", pricePerPing: 4500 };
+const FLOOR_DIRECTIONS = [
+  { code: "PERPENDICULAR", name: "垂直開門" },
+  { code: "PARALLEL", name: "平行開門" },
+];
+
+const DOWNLIGHT_UNIT_PRICE = 1800; // $/組（LED嵌燈+燈具配電+開孔+安裝工資）
+function defaultDownlightCount(roomCode) {
+  if (roomCode === "LIVING") return 6;
+  if (roomCode === "ENTRANCE") return 2;
+  if (roomCode === "DINING") return 2;
+  return 4; // 主臥／次臥A／次臥B 及其餘空間
+}
+
+// 保護工程 — 逐項計價，公共區域保護／室內地面保護以總坪數計，電梯保護／大門保護以「式/樘」計。
+const PROTECTION_ITEMS = [
+  { code: "PUBLIC_AREA", name: "公共區域保護", unit: "坪", price: 1800, byArea: true },
+  { code: "ELEVATOR", name: "電梯保護", unit: "式", price: 12000, byArea: false },
+  { code: "FLOOR_PROTECT", name: "室內地面保護", unit: "坪", price: 550, byArea: true },
+  { code: "DOOR_PROTECT", name: "大門保護", unit: "樘", price: 2100, byArea: false },
+];
+// 清潔工程 — 廢棄物清運以車計，細清以總坪數計。
+const CLEANING_ITEMS = [
+  { code: "DEBRIS", name: "工程廢棄物清運", unit: "車", price: 15000, byArea: false },
+  { code: "FINAL_CLEAN", name: "完工細清", unit: "坪", price: 800, byArea: true },
+];
+
+// Placeholder per-坪 rates — per-room painting method.
+const PAINT_TYPES = [
+  { code: "NONE", name: "不施作", price: 0 },
+  { code: "AS_IS", name: "原況刷漆", price: 800 },
+  { code: "FULL_SKIM", name: "全面批土打磨", price: 1800 },
+];
+
+// Whole-house paint material + base color — one project-wide choice.
+const PAINT_MATERIALS = [
+  { code: "CEMENT", name: "水泥漆" },
+  { code: "LATEX", name: "乳膠漆" },
+];
+const BASE_PAINT_COLORS = [
+  { code: "1501", name: "白1501", hex: "#FFFFFF" },
+  { code: "4092", name: "百合白4092", hex: "#FBF6EC" },
+  { code: "4090", name: "玫瑰白4090", hex: "#F7EDE9" },
+  { code: "8222", name: "特白8222", hex: "#F5F5F0" },
+];
+
+// 16 suggested accent-wall (跳色) colors — placeholder swatches only, NOT real 虹牌 catalog
+// codes/names (no catalog data was supplied), replace with the actual 虹牌 color chart reference.
+const ACCENT_COLORS_16 = [
+  { code: "ACC-01", name: "灰藍", hex: "#7A8B99" },
+  { code: "ACC-02", name: "鼠尾草綠", hex: "#9CAF88" },
+  { code: "ACC-03", name: "赤陶橘", hex: "#C97B5A" },
+  { code: "ACC-04", name: "芥末黃", hex: "#D4A94C" },
+  { code: "ACC-05", name: "深藍", hex: "#2E4057" },
+  { code: "ACC-06", name: "淺粉", hex: "#E8C4C4" },
+  { code: "ACC-07", name: "炭灰", hex: "#4A4A48" },
+  { code: "ACC-08", name: "橄欖綠", hex: "#7D8471" },
+  { code: "ACC-09", name: "灰玫瑰", hex: "#B98C8C" },
+  { code: "ACC-10", name: "藍綠", hex: "#4F7C7C" },
+  { code: "ACC-11", name: "暖灰", hex: "#9C9186" },
+  { code: "ACC-12", name: "淺棕", hex: "#A98B70" },
+  { code: "ACC-13", name: "天空藍", hex: "#A8C8DC" },
+  { code: "ACC-14", name: "薰衣草紫", hex: "#B7A8C9" },
+  { code: "ACC-15", name: "磚紅", hex: "#9C4A3C" },
+  { code: "ACC-16", name: "森林綠", hex: "#3D5C3A" },
+];
+
+// Curtain box (窗簾盒) — priced per 尺 like beam-wrap, only relevant to rooms with windows worth dressing.
+const CURTAIN_BOX_PRICE_PER_CHI = 500;
+const CURTAIN_BOX_ROOMS = ["LIVING", "MASTER", "BED_A", "BED_B"];
+
+// Window coverings (布簾/捲簾/百葉簾/調光簾/蜂巢簾) — same room scope as the curtain box.
+// No pricing formula was given yet, so each item's price is just typed in for now.
+const CURTAIN_TYPES = [
+  { code: "FABRIC", name: "布簾" },
+  { code: "ROLLER", name: "捲簾" },
+  { code: "VENETIAN", name: "百葉簾" },
+  { code: "ZEBRA", name: "調光簾" },
+  { code: "HONEYCOMB", name: "蜂巢簾" },
+];
+
+// 跳色 (accent wall) is only offered in rooms that also get curtains dressed — living room + bedrooms.
+const ACCENT_WALL_ROOMS = ["LIVING", "MASTER", "BED_A", "BED_B"];
+
+function makeRoomWork(roomCode) {
+  return {
+    ceilingType: "NONE", floorEnabled: false, floorDirection: "PERPENDICULAR",
+    areaPing: 0, beamLengthChi: 0, downlightCount: defaultDownlightCount(roomCode),
+    accentEnabled: false, accentColorCode: ACCENT_COLORS_16[0].code,
+    curtainBoxLengthChi: 0, curtainItems: [],
+  };
+}
+
+function computeRoomWork(work, roomCode) {
+  const ceiling = CEILING_TYPES.find((c) => c.code === work.ceilingType) || CEILING_TYPES[0];
+  let ceilingPrice = 0;
+  if (ceiling.code === "BEAM_WRAP") ceilingPrice = Math.round(ceiling.price * (work.beamLengthChi || 0));
+  else if (ceiling.code !== "NONE") ceilingPrice = Math.round(ceiling.price * work.areaPing);
+  const floorPrice = work.floorEnabled ? Math.round(FLOOR_PRODUCT.pricePerPing * work.areaPing) : 0;
+  const downlightPrice = Math.round(DOWNLIGHT_UNIT_PRICE * (work.downlightCount || 0));
+  const curtainApplicable = CURTAIN_BOX_ROOMS.includes(roomCode);
+  const curtainPrice = curtainApplicable ? Math.round(CURTAIN_BOX_PRICE_PER_CHI * (work.curtainBoxLengthChi || 0)) : 0;
+  const curtainItemsPrice = (work.curtainItems || []).reduce((s, it) => s + (Number(it.price) || 0), 0);
+  return {
+    ceiling, ceilingPrice, floorPrice, downlightPrice, curtainApplicable, curtainPrice, curtainItemsPrice,
+    subtotal: ceilingPrice + floorPrice + downlightPrice + curtainPrice + curtainItemsPrice,
+  };
+}
+
+// 油漆工程是全室一起施作，不分空間分別選 — 一種工法套用在所選空間的總坪數上。
+function computePaintWork(paintType, totalAreaPing) {
+  const paint = PAINT_TYPES.find((p) => p.code === paintType) || PAINT_TYPES[0];
+  const price = paint.code === "NONE" ? 0 : Math.round(paint.price * totalAreaPing);
+  return { paint, price };
+}
+
+// Opens LINE with the message pre-filled — the user still picks who to send it to themselves,
+// since a static web page has no way to address a specific LINE contact without official
+// LINE Login/Messaging API integration.
+function shareTextToLine(text) {
+  window.open("https://line.me/R/msg/text/?" + encodeURIComponent(text), "_blank");
+}
+
+const TABS = [
+  { code: "quote", name: "報價" },
+  { code: "contract", name: "簽約" },
+  { code: "procurement", name: "採購" },
+  { code: "profit", name: "利潤" },
+];
+
+function App() {
+  const [activeTab, setActiveTab] = useState("quote");
+  const [projectInfo, setProjectInfo] = useState({ customerName: "", siteName: "", phone: "" });
+  const [floorPlan, setFloorPlan] = useState(null);
+  const [selectedRooms, setSelectedRooms] = useState(["MASTER"]);
+  const [roomWork, setRoomWork] = useState({ MASTER: makeRoomWork("MASTER") });
+  const [spaces, setSpaces] = useState([makeSpace("主臥衣櫃", { id: 1, width: 280, templateId: "couple", room: "MASTER" })]);
+  const [expanded, setExpanded] = useState({ 1: true });
+  const [transportCode, setTransportCode] = useState("TPE");
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [protectionQty, setProtectionQty] = useState({}); // { CODE: quantity } — presence = enabled
+  const [cleaningQty, setCleaningQty] = useState({}); // { CODE: quantity } — presence = enabled
+  const [paintType, setPaintType] = useState("NONE"); // 全室油漆施工方式 — one choice for the whole project
+  const [paintMaterial, setPaintMaterial] = useState("LATEX");
+  const [baseColor, setBaseColor] = useState(BASE_PAINT_COLORS[0].code);
+  const [siteAccess, setSiteAccess] = useState({ accessMethod: "OWNER", accessPassword: "", accessNote: "", workingHours: "" });
+  const [tradeSchedule, setTradeSchedule] = useState({});
+
+  const setTradeEntryDate = (tradeCode, date) => {
+    setTradeSchedule((prev) => ({ ...prev, [tradeCode]: date }));
+  };
+
+  const toggleRoom = (code) => {
+    setSelectedRooms((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+    setRoomWork((prev) => (prev[code] ? prev : { ...prev, [code]: makeRoomWork(code) }));
+  };
+  const updateRoomWork = (code, patch) => {
+    setRoomWork((prev) => ({ ...prev, [code]: { ...(prev[code] || makeRoomWork(code)), ...patch } }));
+  };
+
+  const addSpace = (roomCode) => {
+    const roomName = (ROOM_TYPES.find((r) => r.code === roomCode) || {}).name || "";
+    const countInRoom = spaces.filter((s) => s.room === roomCode).length;
+    const s = makeSpace(`${roomName}系統櫃${countInRoom + 1}`, { room: roomCode });
+    setSpaces((prev) => [...prev, s]);
+    setExpanded((prev) => ({ ...prev, [s.id]: true }));
+  };
+  const removeSpace = (id) => setSpaces((prev) => prev.filter((s) => s.id !== id));
+  const updateSpace = (id, patch) => setSpaces((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  const toggleExpand = (id) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const results = useMemo(() => spaces.map((space) => ({ space, calc: computeSpace(space) })), [spaces]);
+  const cabinetSubtotal = results.reduce((sum, r) => sum + r.calc.subtotal, 0);
+  const transport = TRANSPORT.find((t) => t.code === transportCode);
+
+  const roomResults = useMemo(() => selectedRooms.map((code) => {
+    const room = ROOM_TYPES.find((r) => r.code === code);
+    const work = roomWork[code] || makeRoomWork(code);
+    const workCalc = computeRoomWork(work, code);
+    const roomSpaces = results.filter((r) => r.space.room === code);
+    const cabinetTotal = roomSpaces.reduce((s, r) => s + r.calc.subtotal, 0);
+    return { room, work, workCalc, roomSpaces, roomTotal: workCalc.subtotal + cabinetTotal };
+  }), [selectedRooms, roomWork, results]);
+
+  const roomWorkTotal = roomResults.reduce((s, r) => s + r.workCalc.subtotal, 0);
+  const totalAreaPing = roomResults.reduce((s, r) => s + (r.work.areaPing || 0), 0);
+
+  const toggleProtectionItem = (code) => {
+    setProtectionQty((prev) => {
+      if (code in prev) { const next = { ...prev }; delete next[code]; return next; }
+      const item = PROTECTION_ITEMS.find((p) => p.code === code);
+      return { ...prev, [code]: item.byArea ? totalAreaPing : 1 };
+    });
+  };
+  const setProtectionItemQty = (code, qty) => setProtectionQty((prev) => ({ ...prev, [code]: qty }));
+  const toggleCleaningItem = (code) => {
+    setCleaningQty((prev) => {
+      if (code in prev) { const next = { ...prev }; delete next[code]; return next; }
+      const item = CLEANING_ITEMS.find((c) => c.code === code);
+      return { ...prev, [code]: item.byArea ? totalAreaPing : 1 };
+    });
+  };
+  const setCleaningItemQty = (code, qty) => setCleaningQty((prev) => ({ ...prev, [code]: qty }));
+
+  const selectedProtection = PROTECTION_ITEMS.filter((p) => p.code in protectionQty).map((p) => ({ ...p, qty: protectionQty[p.code], subtotal: Math.round(p.price * protectionQty[p.code]) }));
+  const protectionTotal = selectedProtection.reduce((s, p) => s + p.subtotal, 0);
+  const selectedCleaning = CLEANING_ITEMS.filter((c) => c.code in cleaningQty).map((c) => ({ ...c, qty: cleaningQty[c.code], subtotal: Math.round(c.price * cleaningQty[c.code]) }));
+  const cleaningTotal = selectedCleaning.reduce((s, c) => s + c.subtotal, 0);
+  const paintWork = computePaintWork(paintType, totalAreaPing);
+  const sharedTotal = protectionTotal + cleaningTotal + paintWork.price;
+
+  // 工程管理費(8%) + 稅金(5%)，都是直接算在整案小計上（不是疊加計算），對齊實際報價單的算法。
+  const grandSubtotal = cabinetSubtotal + roomWorkTotal + sharedTotal + transport.price;
+  const managementFee = Math.round(grandSubtotal * 0.08);
+  const tax = Math.round(grandSubtotal * 0.05);
+  const grandTotal = grandSubtotal + managementFee + tax;
+
+  return (
+    <div style={{ fontFamily: '"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif', background: PAPER, color: NAVY, minHeight: "100vh", padding: "24px 16px 100px" }}>
+      <style>{GLOBAL_CSS}</style>
+      <div style={{ maxWidth: 980, margin: "0 auto" }}>
+        <header className="no-print" style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, letterSpacing: 1, color: GOLD, fontWeight: 600, marginBottom: 6 }}>狸樂聚 · 新屋簡易報價／簽約／採購系統</div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>新屋裝修快速估價</h1>
+          <p style={{ margin: "6px 0 0", color: "#5b6478", fontSize: 14 }}>選空間、配天地、配系統櫃，一次完成報價、簽約與採購單。</p>
+        </header>
+
+        <div className="no-print" style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          {TABS.map((t) => (
+            <button key={t.code} onClick={() => setActiveTab(t.code)}
+              style={{ flex: 1, padding: "10px", borderRadius: 10, border: activeTab === t.code ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: activeTab === t.code ? NAVY : "#fff", color: activeTab === t.code ? "#fff" : NAVY, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "quote" && (
+          <QuoteView
+            projectInfo={projectInfo} setProjectInfo={setProjectInfo}
+            floorPlan={floorPlan} setFloorPlan={setFloorPlan}
+            selectedRooms={selectedRooms} toggleRoom={toggleRoom}
+            updateRoomWork={updateRoomWork} roomResults={roomResults}
+            addSpace={addSpace} removeSpace={removeSpace} updateSpace={updateSpace}
+            expanded={expanded} toggleExpand={toggleExpand}
+            transportCode={transportCode} setTransportCode={setTransportCode}
+            managementFee={managementFee} tax={tax} transport={transport}
+            protectionQty={protectionQty} toggleProtectionItem={toggleProtectionItem} setProtectionItemQty={setProtectionItemQty}
+            cleaningQty={cleaningQty} toggleCleaningItem={toggleCleaningItem} setCleaningItemQty={setCleaningItemQty}
+            paintType={paintType} setPaintType={setPaintType} paintWork={paintWork}
+            paintMaterial={paintMaterial} setPaintMaterial={setPaintMaterial}
+            baseColor={baseColor} setBaseColor={setBaseColor}
+            selectedProtection={selectedProtection} selectedCleaning={selectedCleaning} sharedTotal={sharedTotal}
+            grandSubtotal={grandSubtotal} grandTotal={grandTotal}
+            summaryOpen={summaryOpen} setSummaryOpen={setSummaryOpen}
+          />
+        )}
+        {activeTab === "contract" && (
+          <ContractView
+            projectInfo={projectInfo} roomResults={roomResults} managementFee={managementFee} tax={tax} transport={transport}
+            selectedProtection={selectedProtection} selectedCleaning={selectedCleaning} sharedTotal={sharedTotal}
+            paintType={paintType} paintWork={paintWork} paintMaterial={paintMaterial} baseColor={baseColor}
+            floorPlan={floorPlan} setFloorPlan={setFloorPlan}
+            grandSubtotal={grandSubtotal} grandTotal={grandTotal}
+          />
+        )}
+        {activeTab === "procurement" && (
+          <ProcurementView
+            projectInfo={projectInfo} roomResults={roomResults} results={results}
+            paintType={paintType} paintWork={paintWork} totalAreaPing={totalAreaPing}
+            paintMaterial={paintMaterial} baseColor={baseColor} selectedCleaning={selectedCleaning}
+            siteAccess={siteAccess} setSiteAccess={setSiteAccess}
+            tradeSchedule={tradeSchedule} setTradeEntryDate={setTradeEntryDate}
+          />
+        )}
+        {activeTab === "profit" && (
+          <ProfitView
+            roomResults={roomResults} results={results} selectedProtection={selectedProtection} selectedCleaning={selectedCleaning}
+            transport={transport} managementFee={managementFee} tax={tax} paintWork={paintWork}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QuoteView({
+  projectInfo, setProjectInfo, floorPlan, setFloorPlan, selectedRooms, toggleRoom,
+  updateRoomWork, roomResults, addSpace, removeSpace, updateSpace, expanded, toggleExpand,
+  transportCode, setTransportCode, managementFee, tax, transport,
+  protectionQty, toggleProtectionItem, setProtectionItemQty,
+  cleaningQty, toggleCleaningItem, setCleaningItemQty,
+  paintType, setPaintType, paintWork, paintMaterial, setPaintMaterial, baseColor, setBaseColor,
+  selectedProtection, selectedCleaning, sharedTotal,
+  grandSubtotal, grandTotal, summaryOpen, setSummaryOpen,
+}) {
+  const [measuringRoom, setMeasuringRoom] = useState(null); // { code, name, kind: 'area'|'beam'|'curtain' } | null
+
+  return (
+    <>
+      <Section icon={<User size={16} />} title="客戶資料">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
+          <TextField label="客戶姓名" value={projectInfo.customerName} onChange={(v) => setProjectInfo((p) => ({ ...p, customerName: v }))} placeholder="王小姐" />
+          <TextField label="聯絡電話" value={projectInfo.phone} onChange={(v) => setProjectInfo((p) => ({ ...p, phone: v }))} placeholder="0912-345-678" />
+          <TextField label="案場名稱／地址" value={projectInfo.siteName} onChange={(v) => setProjectInfo((p) => ({ ...p, siteName: v }))} placeholder="信義區○○大樓" icon={<MapPin size={13} />} full />
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <FloorPlanTool
+            floorPlan={floorPlan} setFloorPlan={setFloorPlan}
+            measuringRoom={measuringRoom}
+            updateRoomWork={updateRoomWork}
+            onMeasured={(value) => {
+              if (measuringRoom) {
+                if (measuringRoom.kind === "beam") {
+                  updateRoomWork(measuringRoom.code, { beamLengthChi: Number((value / CM_PER_CHI).toFixed(2)) });
+                } else if (measuringRoom.kind === "curtain") {
+                  updateRoomWork(measuringRoom.code, { curtainBoxLengthChi: Number((value / CM_PER_CHI).toFixed(2)) });
+                } else {
+                  updateRoomWork(measuringRoom.code, { areaPing: value });
+                }
+              }
+              setMeasuringRoom(null);
+            }}
+            onCancelMeasure={() => setMeasuringRoom(null)}
+          />
+        </div>
+      </Section>
+
+      <Section title="共同工程">
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>保護工程</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {PROTECTION_ITEMS.map((p) => {
+              const enabled = p.code in protectionQty;
+              return (
+                <div key={p.code} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                    <input type="checkbox" checked={enabled} onChange={() => toggleProtectionItem(p.code)} />
+                    {p.name}（${p.price.toLocaleString()}/{p.unit}）
+                  </label>
+                  {enabled && (
+                    <>
+                      <input type="number" value={protectionQty[p.code]} onChange={(e) => setProtectionItemQty(p.code, Number(e.target.value) || 0)}
+                        style={{ width: 64, padding: "5px 8px", borderRadius: 6, border: "1px solid #d8d2c2", fontSize: 13 }} />
+                      <span style={{ fontSize: 12, color: "#5b6478" }}>{p.unit}　＝　${Math.round(p.price * protectionQty[p.code]).toLocaleString()}</span>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>清潔工程</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {CLEANING_ITEMS.map((c) => {
+              const enabled = c.code in cleaningQty;
+              return (
+                <div key={c.code} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                    <input type="checkbox" checked={enabled} onChange={() => toggleCleaningItem(c.code)} />
+                    {c.name}（${c.price.toLocaleString()}/{c.unit}）
+                  </label>
+                  {enabled && (
+                    <>
+                      <input type="number" value={cleaningQty[c.code]} onChange={(e) => setCleaningItemQty(c.code, Number(e.target.value) || 0)}
+                        style={{ width: 64, padding: "5px 8px", borderRadius: 6, border: "1px solid #d8d2c2", fontSize: 13 }} />
+                      <span style={{ fontSize: 12, color: "#5b6478" }}>{c.unit}　＝　${Math.round(c.price * cleaningQty[c.code]).toLocaleString()}</span>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>全室油漆</div>
+          <div style={{ fontSize: 12, color: "#5b6478", marginBottom: 6 }}>工法</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            {PAINT_TYPES.map((p) => (
+              <button key={p.code} onClick={() => setPaintType(p.code)}
+                style={{ padding: "8px 14px", borderRadius: 8, border: paintType === p.code ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: paintType === p.code ? NAVY : "#fff", color: paintType === p.code ? "#fff" : NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                {p.name}{p.price > 0 ? `　$${p.price}/坪` : ""}
+              </button>
+            ))}
+          </div>
+          {paintWork.price > 0 && (
+            <p style={{ fontSize: 12, color: "#5b6478", marginBottom: 10 }}>套用在所有已選空間的總坪數上,目前小計 ${paintWork.price.toLocaleString()}。</p>
+          )}
+          <div style={{ fontSize: 12, color: "#5b6478", marginBottom: 6 }}>材料</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            {PAINT_MATERIALS.map((m) => (
+              <button key={m.code} onClick={() => setPaintMaterial(m.code)}
+                style={{ padding: "8px 14px", borderRadius: 8, border: paintMaterial === m.code ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: paintMaterial === m.code ? NAVY : "#fff", color: paintMaterial === m.code ? "#fff" : NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                {m.name}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: "#5b6478", marginBottom: 6 }}>底色</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {BASE_PAINT_COLORS.map((c) => (
+              <button key={c.code} onClick={() => setBaseColor(c.code)}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+                <span style={{
+                  display: "block", width: 32, height: 32, borderRadius: 8, background: c.hex,
+                  border: baseColor === c.code ? `2.5px solid ${NAVY}` : "1px solid #d8d2c2", boxShadow: baseColor === c.code ? `0 0 0 2px ${GOLD}` : "none",
+                }} />
+                <span style={{ fontSize: 10.5, color: NAVY, fontWeight: baseColor === c.code ? 700 : 500 }}>{c.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      <Section title="空間選擇">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {ROOM_TYPES.map((r) => (
+            <button key={r.code} onClick={() => toggleRoom(r.code)}
+              style={{ padding: "8px 14px", borderRadius: 8, border: selectedRooms.includes(r.code) ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: selectedRooms.includes(r.code) ? NAVY : "#fff", color: selectedRooms.includes(r.code) ? "#fff" : NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {r.name}
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      <div className="app-grid">
+        <div>
+          {roomResults.length === 0 && (
+            <p style={{ fontSize: 13, color: "#8a8f9c" }}>請先在上方「空間選擇」勾選要報價的空間。</p>
+          )}
+          {roomResults.map(({ room, work, workCalc, roomSpaces }) => (
+            <RoomCard
+              key={room.code} room={room} work={work} workCalc={workCalc}
+              onUpdateWork={(patch) => updateRoomWork(room.code, patch)}
+              roomSpaces={roomSpaces}
+              expanded={expanded} toggleExpand={toggleExpand}
+              updateSpace={updateSpace} removeSpace={removeSpace}
+              onAddSpace={() => addSpace(room.code)}
+              floorPlan={floorPlan} setFloorPlan={setFloorPlan}
+              onStartMeasure={setMeasuringRoom}
+              measuringRoom={measuringRoom}
+            />
+          ))}
+
+          <Section icon={<Truck size={16} />} title="運送（整案）">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {TRANSPORT.map((t) => (
+                <button key={t.code} onClick={() => setTransportCode(t.code)}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: transportCode === t.code ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: transportCode === t.code ? NAVY : "#fff", color: transportCode === t.code ? "#fff" : NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  {t.name} ${t.price.toLocaleString()}
+                </button>
+              ))}
+            </div>
+          </Section>
+        </div>
+
+        <div className={`summary-panel ${summaryOpen ? "expanded" : ""}`}>
+          <div className="collapsed-bar" onClick={() => setSummaryOpen((v) => !v)}>
+            <div>
+              <div style={{ fontSize: 11, letterSpacing: 1, color: GOLD, fontWeight: 700 }}>目前估價</div>
+              <div style={{ fontSize: 22, fontWeight: 800 }}>${grandTotal.toLocaleString()}</div>
+            </div>
+            {summaryOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+          </div>
+          <div className="full-breakdown">
+            <div style={{ fontSize: 12, letterSpacing: 1, color: GOLD, fontWeight: 700, marginBottom: 4 }}>目前估價</div>
+            <div style={{ fontSize: 30, fontWeight: 800, marginBottom: 14 }}>${grandTotal.toLocaleString()}</div>
+
+            {sharedTotal > 0 && (
+              <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, color: GOLD }}>共同工程</div>
+                {selectedProtection.map((p) => <PriceLine key={p.code} label={`${p.name} × ${p.qty}${p.unit}`} value={p.subtotal} />)}
+                {selectedCleaning.map((c) => <PriceLine key={c.code} label={`${c.name} × ${c.qty}${c.unit}`} value={c.subtotal} />)}
+                {paintWork.price > 0 && <PriceLine label={`全室油漆(${paintWork.paint.name})`} value={paintWork.price} />}
+              </div>
+            )}
+
+            {roomResults.map(({ room, work, workCalc, roomSpaces, roomTotal }) => (
+              <div key={room.code} style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, color: GOLD }}>{room.name}</div>
+                {workCalc.ceilingPrice > 0 && <PriceLine label={`天花板(${workCalc.ceiling.name})`} value={workCalc.ceilingPrice} />}
+                {workCalc.curtainPrice > 0 && <PriceLine label="窗簾盒" value={workCalc.curtainPrice} />}
+                {workCalc.downlightPrice > 0 && <PriceLine label={`崁燈 × ${work.downlightCount}`} value={workCalc.downlightPrice} />}
+                {workCalc.floorPrice > 0 && <PriceLine label={`${FLOOR_PRODUCT.name}(${(FLOOR_DIRECTIONS.find(d => d.code === work.floorDirection) || {}).name || ""})`} value={workCalc.floorPrice} />}
+                {roomSpaces.map(({ space, calc }) => (
+                  <PriceLine key={space.id} label={space.name} value={calc.subtotal} />
+                ))}
+                {workCalc.curtainItemsPrice > 0 && <PriceLine label="窗簾" value={workCalc.curtainItemsPrice} />}
+                <PriceLine label="空間小計" value={roomTotal} bold />
+              </div>
+            ))}
+
+            <PriceLine label="運送" value={transport.price} />
+            <PriceLine label="小計" value={grandSubtotal} />
+            <PriceLine label={<><Wrench size={11} style={{ marginRight: 4 }} />工程管理費 (8%)</>} value={managementFee} />
+            <PriceLine label="稅金 (5%)" value={tax} />
+            <div style={{ height: 1, background: "rgba(255,255,255,0.15)", margin: "10px 0" }} />
+            <PriceLine label="總價" value={grandTotal} bold big />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Lets a room's 坪數 be typed directly, pulled by tracing straight on the floor plan (delegated
+// up to FloorPlanTool via onStartDraw, since that's where the image actually lives), or computed
+// from a quick 長×寬 (cm) entry — all three just set the same numeric value.
+function AreaPicker({ label, value, onChange, floorPlan, onStartDraw, isMeasuring }) {
+  const [mode, setMode] = useState("idle"); // idle | fromDims
+  const [lengthCm, setLengthCm] = useState("");
+  const [widthCm, setWidthCm] = useState("");
+
+  const applyFromDims = () => {
+    const l = Number(lengthCm), w = Number(widthCm);
+    if (!l || !w) return;
+    const ping = (l * w) / 10000 / 3.305785;
+    onChange(Number(ping.toFixed(2)));
+    setMode("idle");
+    setLengthCm(""); setWidthCm("");
+  };
+
+  return (
+    <div>
+      <NumberField label={label} value={value} onChange={onChange} min={0} max={200} />
+      <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+        <button onClick={onStartDraw} disabled={!floorPlan || isMeasuring} style={{ ...smallBtnStyle, opacity: !floorPlan || isMeasuring ? 0.5 : 1 }}>
+          {isMeasuring ? "請至上方平面圖框選…" : "從平面圖框選"}
+        </button>
+        <button onClick={() => setMode(mode === "fromDims" ? "idle" : "fromDims")} style={smallBtnStyle}>用長寬計算</button>
+      </div>
+
+      {!floorPlan && <p style={{ fontSize: 11, color: "#8a8f9c", marginTop: 6 }}>尚未上傳平面圖，可以先到上方「案場平面圖」上傳。</p>}
+
+      {mode === "fromDims" && (
+        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6, flexWrap: "wrap" }}>
+          <input value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} placeholder="長 cm" inputMode="numeric"
+            style={{ width: 80, padding: "7px 8px", borderRadius: 6, border: "1px solid #d8d2c2", fontSize: 12 }} />
+          <span style={{ fontSize: 12, color: "#8a8f9c" }}>×</span>
+          <input value={widthCm} onChange={(e) => setWidthCm(e.target.value)} placeholder="寬 cm" inputMode="numeric"
+            style={{ width: 80, padding: "7px 8px", borderRadius: 6, border: "1px solid #d8d2c2", fontSize: 12 }} />
+          <button onClick={applyFromDims} style={{ ...smallBtnStyle, background: NAVY, color: "#fff" }}>套用</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Beam-wrap (包樑) is priced per 尺, a length not an area — direct numeric entry (in 尺) is
+// already the "type it in" path; this just adds a from-floor-plan line measurement on top.
+function LengthPicker({ label, valueChi, onChange, floorPlan, onStartMeasure, isMeasuring }) {
+  return (
+    <div>
+      <NumberField label={label} value={valueChi} onChange={onChange} min={0} max={500} />
+      <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+        <button onClick={onStartMeasure} disabled={!floorPlan || isMeasuring} style={{ ...smallBtnStyle, opacity: !floorPlan || isMeasuring ? 0.5 : 1 }}>
+          {isMeasuring ? "請至上方平面圖測量…" : "從平面圖測量"}
+        </button>
+      </div>
+      {!floorPlan && <p style={{ fontSize: 11, color: "#8a8f9c", marginTop: 6 }}>尚未上傳平面圖，可以先到上方「案場平面圖」上傳。</p>}
+    </div>
+  );
+}
+
+// Window coverings — no pricing formula yet, so 預估售價 is just typed in per item for now.
+// 布簾 (fabric curtain) pricing — transcribed from the uploaded Excel (品牌 A only; brand B's
+// digit-extraction rule wasn't given as a working formula, only described in words).
+// Two small errors in the sheet's own formulas are corrected here (noted at each spot).
+function roundUpTo(value, decimals) {
+  const f = Math.pow(10, decimals);
+  return Math.ceil(value * f) / f;
+}
+const FABRIC_CURTAIN_FOLD_MULTIPLIER = 2.4; // 折幅
+const FABRIC_CURTAIN_BRAND_A = { costDiscount: 0.3, saleDiscount: 0.7 }; // 成本/售價 幾折
+
+function computeFabricCurtainPrice(code, widthCm, heightCm, fabricWidthCm) {
+  const codeStr = String(code || "").trim();
+  const W = Number(widthCm), H = Number(heightCm), wide = Number(fabricWidthCm);
+  if (codeStr.length < 4 || !W || !H || !wide) return null;
+  const dollarRate = Number(codeStr.slice(1, 4)); // Excel: MID(編號,2,3)
+  if (Number.isNaN(dollarRate)) return null;
+  const sellRate = dollarRate * FABRIC_CURTAIN_BRAND_A.saleDiscount; // 售價=
+  const costRate = dollarRate * FABRIC_CURTAIN_BRAND_A.costDiscount; // 成本=
+  const orderPanelsRaw = (W * FABRIC_CURTAIN_FOLD_MULTIPLIER) / wide;
+  const orderPanels = roundUpTo(orderPanelsRaw, 1); // 下單幾幅
+  const actualPanels = Math.ceil(orderPanelsRaw); // 實際幾幅
+  const heightFactor = (H + 30) / 90; // 高幅
+  const fabricCost = Math.round(heightFactor * actualPanels * sellRate); // 布$ (售價側)
+  const fabricCostBasis = Math.round(heightFactor * actualPanels * costRate); // 布$ (成本側)
+  const hardwareCost = (W / 30) * 80; // 窗材 (same for both sides in the sheet)
+  // Excel's false-branch referenced an empty cell (D11) instead of 下單幾幅 (C11) — using the
+  // intended reference here, matching the parallel 成本 block which has no such typo.
+  const laborCost = H > 270 ? actualPanels * 200 * 2 : orderPanels * 200; // 車工 (same for both sides)
+  // Excel's own 售價 cell summed C15:C18, i.e. including itself (a circular reference) — using
+  // the non-circular sum of the three cost lines, which is what that formula clearly intended.
+  const totalPrice = Math.round(fabricCost + hardwareCost + laborCost);
+  const totalCost = Math.round(fabricCostBasis + hardwareCost + laborCost);
+  return { dollarRate, sellRate, costRate, orderPanels, actualPanels, heightFactor, fabricCost, hardwareCost, laborCost, totalPrice, totalCost };
+}
+
+function CurtainItemsEditor({ items, onChange }) {
+  const [draft, setDraft] = useState({ type: "FABRIC", lengthCm: "", widthCm: "", model: "", price: "", fabricCode: "", fabricWidthCm: "140" });
+
+  const isFabric = draft.type === "FABRIC";
+  const fabricCalc = isFabric ? computeFabricCurtainPrice(draft.fabricCode, draft.widthCm, draft.lengthCm, draft.fabricWidthCm) : null;
+
+  const addItem = () => {
+    if (!draft.lengthCm || !draft.widthCm) return;
+    if (isFabric && !fabricCalc) return; // need a valid code + dimensions before it can be priced
+    const item = {
+      id: Date.now(),
+      type: draft.type,
+      lengthCm: Number(draft.lengthCm),
+      widthCm: Number(draft.widthCm),
+      model: isFabric ? draft.fabricCode : draft.model,
+      price: isFabric ? fabricCalc.totalPrice : (Number(draft.price) || 0),
+      cost: isFabric ? fabricCalc.totalCost : null,
+    };
+    onChange([...items, item]);
+    setDraft({ type: draft.type, lengthCm: "", widthCm: "", model: "", price: "", fabricCode: "", fabricWidthCm: draft.fabricWidthCm });
+  };
+  const removeItem = (id) => onChange(items.filter((it) => it.id !== id));
+
+  const inputStyle = { padding: "7px 8px", borderRadius: 6, border: "1px solid #d8d2c2", fontSize: 12.5 };
+
+  return (
+    <div>
+      {items.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+          {items.map((it) => {
+            const typeName = (CURTAIN_TYPES.find((t) => t.code === it.type) || {}).name || it.type;
+            return (
+              <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid #e4ddc8", borderRadius: 8, padding: "6px 10px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: NAVY }}>{typeName}</span>
+                <span style={{ fontSize: 12, color: "#5b6478" }}>長{it.lengthCm}×寬{it.widthCm}cm</span>
+                {it.model && <span style={{ fontSize: 12, color: "#5b6478" }}>{it.type === "FABRIC" ? "編號" : "型號"}：{it.model}</span>}
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: NAVY, marginLeft: "auto" }}>${it.price.toLocaleString()}</span>
+                <button onClick={() => removeItem(it.id)} style={{ border: "none", background: "none", color: "#b0453a", cursor: "pointer", padding: 2 }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{ background: "#fbf9f3", border: "1px solid #eee7d6", borderRadius: 8, padding: 10 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+          {CURTAIN_TYPES.map((t) => (
+            <button key={t.code} onClick={() => setDraft((d) => ({ ...d, type: t.code }))}
+              style={{ padding: "6px 10px", borderRadius: 7, border: draft.type === t.code ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: draft.type === t.code ? NAVY : "#fff", color: draft.type === t.code ? "#fff" : NAVY, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+          <input value={draft.lengthCm} onChange={(e) => setDraft((d) => ({ ...d, lengthCm: e.target.value }))} placeholder="長(高) cm" inputMode="numeric" style={{ ...inputStyle, width: 80 }} />
+          <input value={draft.widthCm} onChange={(e) => setDraft((d) => ({ ...d, widthCm: e.target.value }))} placeholder="寬 cm" inputMode="numeric" style={{ ...inputStyle, width: 74 }} />
+          {isFabric ? (
+            <>
+              <input value={draft.fabricCode} onChange={(e) => setDraft((d) => ({ ...d, fabricCode: e.target.value }))} placeholder="布料編號" inputMode="numeric" style={{ ...inputStyle, width: 90 }} />
+              <input value={draft.fabricWidthCm} onChange={(e) => setDraft((d) => ({ ...d, fabricWidthCm: e.target.value }))} placeholder="布幅寬 cm" inputMode="numeric" style={{ ...inputStyle, width: 90 }} />
+            </>
+          ) : (
+            <>
+              <input value={draft.model} onChange={(e) => setDraft((d) => ({ ...d, model: e.target.value }))} placeholder="型號" style={{ ...inputStyle, width: 90 }} />
+              <input value={draft.price} onChange={(e) => setDraft((d) => ({ ...d, price: e.target.value }))} placeholder="預估售價" inputMode="numeric" style={{ ...inputStyle, width: 90 }} />
+            </>
+          )}
+        </div>
+        {isFabric && (
+          <p style={{ fontSize: 12, fontWeight: 700, color: fabricCalc ? NAVY : "#b0aa90", margin: "0 0 8px" }}>
+            {fabricCalc ? `依公式計算售價：$${fabricCalc.totalPrice.toLocaleString()}（布$${fabricCalc.fabricCost}＋窗材$${Math.round(fabricCalc.hardwareCost)}＋車工$${Math.round(fabricCalc.laborCost)}）` : "請輸入長、寬、布料編號（至少4碼）與布幅寬以自動算出售價"}
+          </p>
+        )}
+        <button onClick={addItem} style={{ ...smallBtnStyle, background: NAVY, color: "#fff" }}><Plus size={12} /> 新增窗簾</button>
+      </div>
+      <p style={{ fontSize: 10.5, color: "#b0aa90", marginTop: 6 }}>
+        布簾售價依你提供的公式自動計算（僅品牌 A,取編號中間3碼、成本3折/售價7折）；其餘窗簾類型的預估售價仍為手動輸入,日後有公式再改成自動計算。
+      </p>
+    </div>
+  );
+}
+
+function RoomCard({ room, work, workCalc, onUpdateWork, roomSpaces, expanded, toggleExpand, updateSpace, removeSpace, onAddSpace, floorPlan, setFloorPlan, onStartMeasure, measuringRoom }) {
+  const [open, setOpen] = useState(true);
+  const cabinetTotal = roomSpaces.reduce((s, r) => s + r.calc.subtotal, 0);
+  const isThisRoom = measuringRoom && measuringRoom.code === room.code;
+  const isMeasuringArea = !!isThisRoom && measuringRoom.kind === "area";
+  const isMeasuringBeam = !!isThisRoom && measuringRoom.kind === "beam";
+  const isMeasuringCurtain = !!isThisRoom && measuringRoom.kind === "curtain";
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e4ddc8", borderRadius: 12, marginBottom: 16, overflow: "hidden" }}>
+      <div onClick={() => setOpen((v) => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", cursor: "pointer", background: "#fbf9f3" }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>{room.name}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#5b6478" }}>${(workCalc.subtotal + cabinetTotal).toLocaleString()}</span>
+          {open ? <ChevronUp size={18} color={NAVY} /> : <ChevronDown size={18} color={NAVY} />}
+        </div>
+      </div>
+      {open && (
+        <div style={{ padding: 16 }}>
+          <Section title="空間面積">
+            <AreaPicker label="空間坪數（天花板／地板共用）" value={work.areaPing} onChange={(v) => onUpdateWork({ areaPing: v })} floorPlan={floorPlan} onStartDraw={() => onStartMeasure({ ...room, kind: "area" })} isMeasuring={isMeasuringArea} />
+          </Section>
+
+          <Section title="天花板">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {CEILING_TYPES.map((c) => (
+                <button key={c.code} onClick={() => onUpdateWork({ ceilingType: c.code })}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: work.ceilingType === c.code ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: work.ceilingType === c.code ? NAVY : "#fff", color: work.ceilingType === c.code ? "#fff" : NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  {c.name}{c.price > 0 ? `　$${c.price}/${c.unit === "chi" ? "尺" : "坪"}` : ""}
+                </button>
+              ))}
+            </div>
+            {work.ceilingType === "BEAM_WRAP" && (
+              <div style={{ marginTop: 10 }}>
+                <LengthPicker label="包樑長度（尺）" valueChi={work.beamLengthChi} onChange={(v) => onUpdateWork({ beamLengthChi: v })} floorPlan={floorPlan} onStartMeasure={() => onStartMeasure({ ...room, kind: "beam" })} isMeasuring={isMeasuringBeam} />
+              </div>
+            )}
+          </Section>
+
+          <Section title="地板">
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", marginBottom: work.floorEnabled ? 10 : 0 }}>
+              <input type="checkbox" checked={work.floorEnabled} onChange={(e) => onUpdateWork({ floorEnabled: e.target.checked })} />
+              含{FLOOR_PRODUCT.name}（$ {FLOOR_PRODUCT.pricePerPing}/坪）
+            </label>
+            {work.floorEnabled && (
+              <div>
+                <div style={{ fontSize: 12, color: "#5b6478", marginBottom: 6 }}>鋪設走向</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {FLOOR_DIRECTIONS.map((d) => (
+                    <button key={d.code} onClick={() => onUpdateWork({ floorDirection: d.code })}
+                      style={{ padding: "8px 14px", borderRadius: 8, border: work.floorDirection === d.code ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: work.floorDirection === d.code ? NAVY : "#fff", color: work.floorDirection === d.code ? "#fff" : NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                      {d.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Section>
+
+          <Section title="崁燈">
+            <NumberField label={`數量（盞，$${DOWNLIGHT_UNIT_PRICE}/盞）`} value={work.downlightCount} onChange={(v) => onUpdateWork({ downlightCount: v })} min={0} max={50} />
+          </Section>
+
+          {ACCENT_WALL_ROOMS.includes(room.code) && (
+            <Section title="跳色">
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", marginBottom: work.accentEnabled ? 10 : 0 }}>
+                <input type="checkbox" checked={work.accentEnabled} onChange={(e) => onUpdateWork({ accentEnabled: e.target.checked })} />
+                要跳色（挑一面牆用不同顏色，油漆工法／材料在「共同工程」統一設定）
+              </label>
+              {work.accentEnabled && (
+                <div>
+                  <div style={{ fontSize: 12, color: "#5b6478", marginBottom: 6 }}>虹牌建議跳色（16色｜示意色卡，非正式色號）</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
+                    {ACCENT_COLORS_16.map((c) => (
+                      <button key={c.code} onClick={() => onUpdateWork({ accentColorCode: c.code })}
+                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: 3 }}>
+                        <span style={{
+                          display: "block", width: "100%", aspectRatio: "1", borderRadius: 8, background: c.hex,
+                          border: work.accentColorCode === c.code ? `2.5px solid ${NAVY}` : "1px solid #d8d2c2", boxShadow: work.accentColorCode === c.code ? `0 0 0 2px ${GOLD}` : "none",
+                        }} />
+                        <span style={{ fontSize: 9.5, color: NAVY, fontWeight: work.accentColorCode === c.code ? 700 : 500, textAlign: "center", lineHeight: 1.2 }}>{c.name}</span>
+                        <span style={{ fontSize: 8.5, color: "#8a8f9c" }}>{c.code}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Section>
+          )}
+
+          {CURTAIN_BOX_ROOMS.includes(room.code) && (
+            <Section title="窗簾盒">
+              <LengthPicker label={`窗簾盒長度（尺，$${CURTAIN_BOX_PRICE_PER_CHI}/尺）`} valueChi={work.curtainBoxLengthChi} onChange={(v) => onUpdateWork({ curtainBoxLengthChi: v })} floorPlan={floorPlan} onStartMeasure={() => onStartMeasure({ ...room, kind: "curtain" })} isMeasuring={isMeasuringCurtain} />
+            </Section>
+          )}
+
+          {CURTAIN_BOX_ROOMS.includes(room.code) && (
+            <Section title="窗簾">
+              <CurtainItemsEditor items={work.curtainItems || []} onChange={(items) => onUpdateWork({ curtainItems: items })} />
+            </Section>
+          )}
+
+          <Section title="系統櫃">
+            {roomSpaces.map(({ space, calc }) => (
+              <SpaceCard
+                key={space.id} space={space} calc={calc}
+                expanded={!!expanded[space.id]} onToggle={() => toggleExpand(space.id)}
+                onUpdate={(patch) => updateSpace(space.id, patch)}
+                onRemove={() => removeSpace(space.id)}
+                removable={true}
+              />
+            ))}
+            <button onClick={onAddSpace}
+              style={{ width: "100%", padding: "12px", borderRadius: 10, border: "2px dashed #cfc7ac", background: "transparent", color: NAVY, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <Plus size={14} /> 新增系統櫃
+            </button>
+          </Section>
+
+          <Section title="家具配置（簡化版）">
+            {floorPlan ? (
+              <FurnitureLayoutCanvas room={room} floorPlan={floorPlan} setFloorPlan={setFloorPlan} />
+            ) : (
+              <p style={{ fontSize: 12, color: "#8a8f9c" }}>請先到上方「案場平面圖」上傳並校正比例尺。</p>
+            )}
+          </Section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---- illustrated interior drawing (line-art style, mirrors the paper 標準立面圖) ---- */
+// Real cabinetry zone heights (cm) — from actual shop drawings, not arbitrary fractions.
+const SHORT_HANG_CM = 90;   // shirts / jackets clearance
+const LONG_HANG_CM = 140;   // coats / dresses clearance
+const SHELF_UNIT_CM = 40;   // one folded-clothes shelf
+const DRAWER_UNIT_CM = 25;  // one standard drawer front
+const MAX_DRAWER_STACK_CM = 120; // drawers never stack higher than this from the floor
+
+function GarmentIcon({ x, yTop, height, color }) {
+  const shoulder = Math.max(10, height * 0.42);
+  return (
+    <g stroke={color} strokeWidth="1" fill="none" opacity="0.85">
+      <circle cx={x} cy={yTop - 10} r="1.4" fill={color} stroke="none" />
+      <line x1={x} y1={yTop - 8.5} x2={x} y2={yTop - 2} />
+      <path d={`M ${x - shoulder / 2} ${yTop} L ${x} ${yTop - 4} L ${x + shoulder / 2} ${yTop}`} />
+      <path
+        d={`M ${x - shoulder / 2} ${yTop} L ${x - shoulder / 2.5} ${yTop + height} L ${x + shoulder / 2.5} ${yTop + height} L ${x + shoulder / 2} ${yTop} Z`}
+        fill="#fff" fillOpacity="0.55"
+      />
+    </g>
+  );
+}
+
+function hangingContent(x, y, w, h, long, color) {
+  const rodY = y + 9;
+  const count = Math.max(2, Math.round(w / 24));
+  const garmentH = long ? h - 20 : h * 0.6;
+  const items = [];
+  for (let i = 0; i < count; i++) {
+    const cx = x + (w / (count + 1)) * (i + 1);
+    items.push(<GarmentIcon key={i} x={cx} yTop={rodY + 5} height={garmentH} color={color} />);
+  }
+  return (
+    <>
+      <line x1={x + 4} y1={rodY} x2={x + w - 4} y2={rodY} stroke={color} strokeWidth="1.3" />
+      {items}
+    </>
+  );
+}
+
+function doubleHangingContent(x, y, w, h, color) {
+  const bandH = h / 2;
+  return (
+    <>
+      {hangingContent(x, y, w, bandH, false, color)}
+      {hangingContent(x, y + bandH, w, bandH, false, color)}
+    </>
+  );
+}
+
+function shelfContent(x, y, w, h, color, dim, rows) {
+  const rowH = h / rows;
+  const els = [];
+  for (let r = 1; r < rows; r++) {
+    els.push(<line key={`l${r}`} x1={x + 2} y1={y + rowH * r} x2={x + w - 2} y2={y + rowH * r} stroke={color} strokeWidth="1" opacity={dim ? 0.4 : 0.7} />);
+  }
+  for (let r = 0; r < rows; r++) {
+    const boxW = Math.min(w * 0.3, 20);
+    const boxH = rowH * 0.42;
+    const cx = x + w * (r % 2 === 0 ? 0.25 : 0.58);
+    const cy = y + rowH * r + rowH * 0.3;
+    els.push(
+      <g key={`b${r}`}>
+        <rect x={cx} y={cy} width={boxW} height={boxH} rx="1.5" stroke={color} strokeWidth="0.9" fill="#fff" fillOpacity={dim ? 0.25 : 0.5} />
+        <line x1={cx + 2} y1={cy + boxH * 0.5} x2={cx + boxW - 2} y2={cy + boxH * 0.5} stroke={color} strokeWidth="0.7" opacity="0.6" />
+      </g>
+    );
+  }
+  return <>{els}</>;
+}
+
+function drawerContent(x, y, w, heightsCm, scale, color, onDrawerClick) {
+  // Each drawer can be an individually-chosen height (15/25/35cm) — stack them at their real px size.
+  const els = [];
+  let cursorY = y;
+  heightsCm.forEach((hCm, i) => {
+    const dH = hCm * scale;
+    const dy = cursorY;
+    els.push(
+      <g key={i} onClick={onDrawerClick ? (e) => { e.stopPropagation(); onDrawerClick(i); } : undefined} style={{ cursor: onDrawerClick ? "pointer" : "default" }}>
+        <rect x={x + 3} y={dy + 3} width={w - 6} height={Math.max(dH - 6, 4)} rx="2" stroke={color} strokeWidth="1" fill="#fff" fillOpacity="0.35" />
+        <line x1={x + w / 2 - 9} y1={dy + dH / 2} x2={x + w / 2 + 9} y2={dy + dH / 2} stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+        {dH > 14 && <text x={x + w - 8} y={dy + dH / 2 - 7} textAnchor="end" fontSize="7" fill={color} opacity="0.55">{hCm}</text>}
+      </g>
+    );
+    cursorY += dH;
+  });
+  return <>{els}</>;
+}
+
+function basketContent(x, y, w, heightsCm, scale, color, onBasketClick) {
+  // Wire-basket look: a shallow front panel plus a crosshatch to read differently from a drawer.
+  const els = [];
+  let cursorY = y;
+  heightsCm.forEach((hCm, i) => {
+    const dH = hCm * scale;
+    const dy = cursorY;
+    const bx = x + 3, bw = w - 6, by = dy + 3, bh = Math.max(dH - 6, 4);
+    const hatch = [];
+    const step = Math.max(bw / 5, 6);
+    for (let hx = bx + step; hx < bx + bw; hx += step) {
+      hatch.push(<line key={hx} x1={hx} y1={by} x2={hx - bh * 0.4} y2={by + bh} stroke={color} strokeWidth="0.6" opacity="0.45" />);
+    }
+    els.push(
+      <g key={i} onClick={onBasketClick ? (e) => { e.stopPropagation(); onBasketClick(i); } : undefined} style={{ cursor: onBasketClick ? "pointer" : "default" }}>
+        <rect x={bx} y={by} width={bw} height={bh} rx="2" stroke={color} strokeWidth="1" fill="#fff" fillOpacity="0.2" />
+        {hatch}
+        {dH > 14 && <text x={x + w - 8} y={dy + dH / 2 - 7} textAnchor="end" fontSize="7" fill={color} opacity="0.55">{hCm}</text>}
+      </g>
+    );
+    cursorY += dH;
+  });
+  return <>{els}</>;
+}
+
+function displayContent(x, y, w, h, color, rows) {
+  const rowH = h / rows;
+  const els = [];
+  for (let r = 0; r < rows; r++) {
+    els.push(<line key={`d${r}`} x1={x + 2} y1={y + rowH * (r + 1)} x2={x + w - 2} y2={y + rowH * (r + 1)} stroke={color} strokeWidth="0.8" opacity="0.5" />);
+    const bagW = Math.min(w * 0.24, 17);
+    const cx = x + w * (r % 2 === 0 ? 0.32 : 0.6);
+    const bagY = y + rowH * r + rowH * 0.32;
+    els.push(
+      <g key={`bag${r}`}>
+        <path d={`M ${cx + 2} ${bagY} q ${bagW / 2 - 2} -8 ${bagW - 4} 0`} stroke={color} strokeWidth="0.9" fill="none" />
+        <rect x={cx} y={bagY} width={bagW} height={bagW * 0.72} rx="2" stroke={color} strokeWidth="0.9" fill="#fff" fillOpacity="0.7" />
+      </g>
+    );
+  }
+  return (
+    <>
+      <rect x={x + 2} y={y + 2} width={w - 4} height={h - 4} fill="#EAF2F8" opacity="0.5" />
+      {els}
+      <line x1={x + w * 0.12} y1={y + h * 0.08} x2={x + w * 0.5} y2={y + h * 0.92} stroke="#fff" strokeWidth="7" opacity="0.4" />
+    </>
+  );
+}
+
+// Real cabinetry proportions: the top blind-storage box and floor kick are roughly FIXED cm
+// values (not a percentage of total height) — a 240cm and a 260cm wardrobe both get about the
+// same ~45cm top box and ~9cm kick, per typical shop drawings. A glass display cabinet skips the
+// top box entirely (lit shelving runs almost to the top).
+function zoneCm(category) {
+  if (category === "DISPLAY") return { valance: 0, kick: 9 };
+  return { valance: 45, kick: 9 };
+}
+
+function realInteriorCm(category) {
+  const { valance, kick } = zoneCm(category);
+  return 240 - valance - kick;
+}
+
+const DRAWER_PRESETS_CM = [15, 25, 35];
+function nextDrawerHeight(h) {
+  const idx = DRAWER_PRESETS_CM.indexOf(h);
+  return DRAWER_PRESETS_CM[(idx + 1) % DRAWER_PRESETS_CM.length];
+}
+
+// Default (un-edited) drawer stack for a module — same allocation rule as before, just expressed
+// as an explicit array of 25cm drawers instead of a bare count, so it can be edited afterward.
+function autoDrawerHeights(category, interiorCm) {
+  if (category === "DRAWER") {
+    const cap = Math.min(MAX_DRAWER_STACK_CM, interiorCm);
+    const count = Math.max(1, Math.floor(cap / DRAWER_UNIT_CM));
+    return Array(count).fill(DRAWER_UNIT_CM);
+  }
+  if (category === "HANGING" || category === "LONG_HANGING") {
+    const hangTarget = category === "LONG_HANGING" ? LONG_HANG_CM : SHORT_HANG_CM;
+    const leftover = Math.max(0, interiorCm - hangTarget);
+    const count = Math.floor(leftover / DRAWER_UNIT_CM);
+    return Array(count).fill(DRAWER_UNIT_CM);
+  }
+  return null; // this category has no drawer zone at all
+}
+
+const DRAWER_CAPABLE_CATEGORIES = ["HANGING", "LONG_HANGING", "DRAWER"];
+function resolveDrawerHeights(space, idx, category) {
+  if (!DRAWER_CAPABLE_CATEGORIES.includes(category)) return null;
+  const override = space.drawerOverrides && space.drawerOverrides[idx];
+  if (override) return override;
+  return autoDrawerHeights(category, realInteriorCm(category)) || [];
+}
+
+// 拉籃 (pull-out wire baskets) — same idea as the drawer stack, but never auto-added: they only
+// appear once the user adds one, stacked below the drawers.
+const BASKET_PRESETS_CM = [15, 20, 25];
+function nextBasketHeight(h) {
+  const idx = BASKET_PRESETS_CM.indexOf(h);
+  return BASKET_PRESETS_CM[(idx + 1) % BASKET_PRESETS_CM.length];
+}
+function resolveBasketHeights(space, idx, category) {
+  if (!DRAWER_CAPABLE_CATEGORIES.includes(category)) return null;
+  return (space.basketOverrides && space.basketOverrides[idx]) || [];
+}
+
+/* ---------------------------------------------------------------
+   DXF export (AutoCAD-compatible, plain ASCII DXF R12) — every
+   coordinate is real cm, drawn full scale, with dimension lines
+   and text labels for widths/heights so it opens straight into AutoCAD.
+----------------------------------------------------------------*/
+const PANEL_T = 1.8; // cm — board thickness (matches the catalog's 18mm panel spec), drawn as a real double line
+const FRONT_REVEAL = 0.3; // cm gap shown between adjacent drawer/door fronts and the carcass
+
+function buildSpaceDxfEntities(space, calc) {
+  const L = []; // { type: 'LINE'|'TEXT', ...fields }
+  const line = (x1, y1, x2, y2) => L.push({ type: "LINE", x1, y1, x2, y2 });
+  const text = (x, y, h, str) => L.push({ type: "TEXT", x, y, h, str });
+  // a board drawn as an actual PANEL_T-thick rectangle, not a single centerline
+  const hBoard = (x0, x1, yTop) => { const yb = yTop - PANEL_T; line(x0, yb, x1, yb); line(x0, yTop, x1, yTop); line(x0, yb, x0, yTop); line(x1, yb, x1, yTop); };
+  const vBoard = (x0, y0, y1, thickness) => { const x1 = x0 + thickness; line(x0, y0, x0, y1); line(x1, y0, x1, y1); line(x0, y0, x1, y0); line(x0, y1, x1, y1); };
+  const drawerFront = (x0, x1, yBottom, yTop) => {
+    const fx0 = x0 + FRONT_REVEAL, fx1 = x1 - FRONT_REVEAL, fy0 = yBottom + FRONT_REVEAL, fy1 = yTop - FRONT_REVEAL;
+    line(fx0, fy0, fx1, fy0); line(fx1, fy0, fx1, fy1); line(fx1, fy1, fx0, fy1); line(fx0, fy1, fx0, fy0);
+    // handle/pull — small recessed bar near the top edge of the drawer front
+    const hw = Math.min((fx1 - fx0) * 0.22, 6);
+    const hcx = (fx0 + fx1) / 2;
+    const hy = Math.min(fy1 - 1.2, fy0 + (fy1 - fy0) - 1.2);
+    line(hcx - hw / 2, hy, hcx + hw / 2, hy);
+    line(hcx - hw / 2, hy - 0.5, hcx + hw / 2, hy - 0.5);
+  };
+  // a hanger + garment silhouette, drawn from a rod at rodY hanging DOWN by `height`
+  const garmentIcon = (cx, rodY, height) => {
+    const shoulder = Math.max(4, height * 0.45);
+    const shoulderY = rodY - 2;
+    line(cx, rodY, cx, shoulderY);
+    line(cx - shoulder / 2, shoulderY - 1.2, cx, shoulderY);
+    line(cx, shoulderY, cx + shoulder / 2, shoulderY - 1.2);
+    const hemY = shoulderY - 1.2 - height;
+    line(cx - shoulder / 2, shoulderY - 1.2, cx - shoulder / 2.5, hemY);
+    line(cx - shoulder / 2.5, hemY, cx + shoulder / 2.5, hemY);
+    line(cx + shoulder / 2.5, hemY, cx + shoulder / 2, shoulderY - 1.2);
+  };
+  // a hanging rod with evenly-spaced garments below it, filling [x0..x1] x [yBottom..yTop]
+  const hangZoneIcons = (x0, x1, yBottom, yTop, long) => {
+    const rodY = yTop - 3;
+    line(x0 + 1, rodY, x1 - 1, rodY);
+    const span = x1 - x0;
+    const count = Math.max(2, Math.round(span / 22));
+    const garmentH = long ? Math.max(4, rodY - yBottom - 3) : Math.min(60, (rodY - yBottom) * 0.62);
+    for (let k = 0; k < count; k++) garmentIcon(x0 + (span / (count + 1)) * (k + 1), rodY, garmentH);
+  };
+  // a small folded-clothes box sitting on a shelf, centered at cx with its base at yBase
+  const boxIcon = (cx, yBase, boxW, boxH) => {
+    line(cx - boxW / 2, yBase, cx + boxW / 2, yBase);
+    line(cx + boxW / 2, yBase, cx + boxW / 2, yBase + boxH);
+    line(cx + boxW / 2, yBase + boxH, cx - boxW / 2, yBase + boxH);
+    line(cx - boxW / 2, yBase + boxH, cx - boxW / 2, yBase);
+    line(cx - boxW / 2, yBase + boxH * 0.55, cx + boxW / 2, yBase + boxH * 0.55);
+  };
+  // a small handbag silhouette for the display-cabinet shelves
+  const bagIcon = (cx, yBase, bagW, bagH) => {
+    line(cx - bagW / 2, yBase, cx + bagW / 2, yBase);
+    line(cx + bagW / 2, yBase, cx + bagW / 2, yBase + bagH);
+    line(cx + bagW / 2, yBase + bagH, cx - bagW / 2, yBase + bagH);
+    line(cx - bagW / 2, yBase + bagH, cx - bagW / 2, yBase);
+    line(cx - bagW * 0.28, yBase + bagH, cx - bagW * 0.28, yBase + bagH + 1.5);
+    line(cx - bagW * 0.28, yBase + bagH + 1.5, cx + bagW * 0.28, yBase + bagH + 1.5);
+    line(cx + bagW * 0.28, yBase + bagH + 1.5, cx + bagW * 0.28, yBase + bagH);
+  };
+  // rows of shelf boxes across a shelving cavity split into `rows` bands between yBottom..yTop
+  const shelfBoxIcons = (x0, x1, yBottom, yTop, rows, icon) => {
+    const rowH = (yTop - yBottom) / rows;
+    const w = Math.min((x1 - x0) * 0.28, 18);
+    const h = rowH * 0.45;
+    for (let r = 0; r < rows; r++) {
+      const cx = x0 + (x1 - x0) * (r % 2 === 0 ? 0.3 : 0.62);
+      const yBase = yBottom + rowH * r + rowH * 0.2;
+      icon(cx, yBase, w, h);
+    }
+  };
+
+  const H = 240;
+  let cursorX = 0;
+
+  calc.modules.forEach((m, i) => {
+    const w = m.width;
+    const x0 = cursorX, x1 = cursorX + w;
+    const { valance, kick } = zoneCm(m.category);
+    const valanceY = H - valance;
+
+    // carcass: left/right side panels, top board, and the floor board (resting at kick height —
+    // the open toe-kick recess below it is left blank, matching real construction)
+    vBoard(x0, 0, H, PANEL_T);
+    vBoard(x1 - PANEL_T, 0, H, PANEL_T);
+    hBoard(x0, x1, H);
+    hBoard(x0 + PANEL_T, x1 - PANEL_T, kick + PANEL_T);
+    // top-box (valance) bottom board
+    hBoard(x0 + PANEL_T, x1 - PANEL_T, valanceY);
+    text(x0 + PANEL_T + 1, valanceY + valance / 2 - 2, 5, `頂箱 ${valance}`);
+    text(x0 + PANEL_T + 1, kick / 2 - 1.5, 4, `踢腳 ${kick}`);
+
+    const innerX0 = x0 + PANEL_T, innerX1 = x1 - PANEL_T;
+    const interiorCm = H - valance - kick - PANEL_T; // minus the floor board we just drew
+    const interiorBottom = kick + PANEL_T;
+    const heights = resolveDrawerHeights(space, i, m.category);
+
+    if (heights !== null) {
+      const drawerSum = heights.reduce((s, v) => s + v, 0);
+      const drawerTopY = interiorBottom + drawerSum;
+      if (drawerSum > 0) {
+        hBoard(innerX0, innerX1, drawerTopY);
+        let y = interiorBottom;
+        heights.forEach((h) => {
+          if (y > interiorBottom) hBoard(innerX0, innerX1, y);
+          drawerFront(innerX0, innerX1, y, y + h - PANEL_T);
+          text(innerX1 - 10, y + h / 2 - 2, 5, `${h}`);
+          y += h;
+        });
+      }
+      if (interiorCm - drawerSum > 4) {
+        hangZoneIcons(innerX0, innerX1, drawerTopY, valanceY, m.category === "LONG_HANGING");
+      }
+    } else if (m.category === "SHELF") {
+      const rows = Math.max(1, Math.round(interiorCm / SHELF_UNIT_CM));
+      const rowH = interiorCm / rows;
+      for (let r = 1; r < rows; r++) hBoard(innerX0, innerX1, interiorBottom + rowH * r);
+      shelfBoxIcons(innerX0, innerX1, interiorBottom, valanceY, rows, boxIcon);
+    } else if (m.category === "DOUBLE_HANGING") {
+      const midY = interiorBottom + interiorCm / 2;
+      hBoard(innerX0, innerX1, midY);
+      hangZoneIcons(innerX0, innerX1, interiorBottom, midY, false);
+      hangZoneIcons(innerX0, innerX1, midY, valanceY, false);
+    } else if (m.category === "DISPLAY") {
+      const rows = Math.max(2, Math.round(interiorCm / SHELF_UNIT_CM));
+      const rowH = interiorCm / rows;
+      for (let r = 1; r < rows; r++) hBoard(innerX0, innerX1, interiorBottom + rowH * r);
+      shelfBoxIcons(innerX0, innerX1, interiorBottom, valanceY, rows, bagIcon);
+    }
+
+    text(x0 + w / 2 - Math.min(w * 0.3, 10), -14, 6, `${CATEGORY_META[m.category].label} ${w}`);
+    cursorX = x1;
+  });
+
+  if (calc.built.filler > 0) {
+    const x0 = cursorX, x1 = cursorX + calc.built.filler;
+    vBoard(x0, 0, H, PANEL_T); vBoard(x1 - PANEL_T, 0, H, PANEL_T); hBoard(x0, x1, H); hBoard(x0, x1, PANEL_T);
+    text(x0 + 1, -14, 5, `收邊 ${calc.built.filler}`);
+    cursorX = x1;
+  }
+
+  const drawnTotal = cursorX;
+
+  // overall width dimension (dumb dimension: line + end ticks + text)
+  const dimY = -32;
+  line(0, dimY, drawnTotal, dimY);
+  line(0, dimY - 3, 0, dimY + 3);
+  line(drawnTotal, dimY - 3, drawnTotal, dimY + 3);
+  text(drawnTotal / 2 - 10, dimY - 9, 7, `${space.width}cm`);
+
+  // overall height dimension
+  const dimX = drawnTotal + 15;
+  line(dimX, 0, dimX, H);
+  line(dimX - 3, 0, dimX + 3, 0);
+  line(dimX - 3, H, dimX + 3, H);
+  text(dimX + 5, H / 2, 7, `${H}cm`);
+
+  text(0, H + 20, 8, `${space.name || "衣櫃"}｜正立面圖（單位：cm，僅供參考，非生產排孔圖）`);
+  text(0, H + 14, 5, `板材厚度 ${PANEL_T}cm（雙線表示實際厚度）`);
+  text(0, H + 8, 5, `板材色號：${calc.color.code} ${calc.color.name}（${calc.color.grade}色）｜門片：${calc.door.name}`);
+
+  return L;
+}
+
+// DXF R12 text is plain ASCII — non-ASCII characters (our Chinese labels) must be encoded as
+// \U+XXXX unicode escapes per the DXF spec so AutoCAD renders them correctly regardless of
+// the reading application's codepage, instead of relying on a specific file encoding.
+function escapeDxfText(str) {
+  return Array.from(str).map((ch) => {
+    const code = ch.codePointAt(0);
+    if (code < 128) return ch;
+    return `\\U+${code.toString(16).toUpperCase().padStart(4, "0")}`;
+  }).join("");
+}
+
+function entitiesToDxf(entities) {
+  const out = [];
+  out.push("0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "0", "ENDSEC");
+  out.push("0", "SECTION", "2", "ENTITIES");
+  entities.forEach((e) => {
+    if (e.type === "LINE") {
+      out.push("0", "LINE", "8", "0",
+        "10", e.x1.toFixed(2), "20", e.y1.toFixed(2), "30", "0",
+        "11", e.x2.toFixed(2), "21", e.y2.toFixed(2), "31", "0");
+    } else if (e.type === "TEXT") {
+      out.push("0", "TEXT", "8", "0",
+        "10", e.x.toFixed(2), "20", e.y.toFixed(2), "30", "0",
+        "40", e.h.toFixed(2), "1", escapeDxfText(e.str));
+    }
+  });
+  out.push("0", "ENDSEC", "0", "EOF");
+  return out.join("\n");
+}
+
+function downloadTextFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime || "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportSpaceToDxf(space, calc) {
+  const entities = buildSpaceDxfEntities(space, calc);
+  const dxf = entitiesToDxf(entities);
+  const safeName = (space.name || "衣櫃").replace(/[\\/:*?"<>|]/g, "");
+  downloadTextFile(`${safeName}-立面圖.dxf`, dxf, "application/dxf");
+}
+
+// Web Share API (level 2, file sharing) lets the OS share sheet offer LINE directly when it's
+// installed — this only works over https and on browsers that support sharing files, so it
+// falls back to a plain download (with a heads-up) everywhere else.
+async function shareSpaceDxf(space, calc) {
+  const entities = buildSpaceDxfEntities(space, calc);
+  const dxf = entitiesToDxf(entities);
+  const safeName = (space.name || "衣櫃").replace(/[\\/:*?"<>|]/g, "");
+  const filename = `${safeName}-立面圖.dxf`;
+  try {
+    const file = new File([dxf], filename, { type: "application/dxf" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename, text: `${space.name || "衣櫃"} 系統櫃立面圖` });
+      return;
+    }
+  } catch (err) {
+    if (err && err.name === "AbortError") return; // user cancelled the share sheet
+  }
+  downloadTextFile(filename, dxf, "application/dxf");
+  alert("此瀏覽器不支援直接分享檔案給 LINE，已改為下載，請於下載完成後在 LINE 中手動選擇該檔案傳送。");
+}
+
+function drawInterior(category, x, y, w, h, color, scale, drawerHeightsCm, onDrawerClick, basketHeightsCm, onBasketClick) {
+  const interiorCm = h / scale;
+
+  switch (category) {
+    case "HANGING":
+    case "LONG_HANGING": {
+      const drawerSumCm = (drawerHeightsCm || []).reduce((s, v) => s + v, 0);
+      const basketSumCm = (basketHeightsCm || []).reduce((s, v) => s + v, 0);
+      const hangCm = interiorCm - drawerSumCm - basketSumCm;
+      const hangPx = hangCm * scale;
+      const drawerPx = drawerSumCm * scale;
+      return (
+        <>
+          {hangingContent(x, y, w, hangPx, category === "LONG_HANGING", color)}
+          {drawerHeightsCm && drawerHeightsCm.length > 0 && (
+            <>
+              <line x1={x} y1={y + hangPx} x2={x + w} y2={y + hangPx} stroke={color} strokeWidth="0.8" opacity="0.5" />
+              {drawerContent(x, y + hangPx, w, drawerHeightsCm, scale, color, onDrawerClick)}
+            </>
+          )}
+          {basketHeightsCm && basketHeightsCm.length > 0 && (
+            <>
+              <line x1={x} y1={y + hangPx + drawerPx} x2={x + w} y2={y + hangPx + drawerPx} stroke={color} strokeWidth="0.8" opacity="0.5" />
+              {basketContent(x, y + hangPx + drawerPx, w, basketHeightsCm, scale, color, onBasketClick)}
+            </>
+          )}
+        </>
+      );
+    }
+    case "DOUBLE_HANGING": return doubleHangingContent(x, y, w, h, color);
+    case "SHELF": {
+      const rows = Math.max(1, Math.round(interiorCm / SHELF_UNIT_CM));
+      return shelfContent(x, y, w, h, color, false, rows);
+    }
+    case "DISPLAY": {
+      const rows = Math.max(2, Math.round(interiorCm / SHELF_UNIT_CM));
+      return displayContent(x, y, w, h, color, rows);
+    }
+    case "DRAWER": {
+      const drawerSumCm = (drawerHeightsCm || []).reduce((s, v) => s + v, 0);
+      const basketSumCm = (basketHeightsCm || []).reduce((s, v) => s + v, 0);
+      const hangCm = interiorCm - drawerSumCm - basketSumCm;
+      const hangPx = hangCm * scale;
+      const drawerPx = drawerSumCm * scale;
+      return (
+        <>
+          {hangPx > 12 && hangingContent(x, y, w, hangPx, false, color)}
+          {hangPx > 12 && (
+            <line x1={x} y1={y + hangPx} x2={x + w} y2={y + hangPx} stroke={color} strokeWidth="0.8" opacity="0.5" />
+          )}
+          {drawerContent(x, y + hangPx, w, drawerHeightsCm, scale, color, onDrawerClick)}
+          {basketHeightsCm && basketHeightsCm.length > 0 && (
+            <>
+              <line x1={x} y1={y + hangPx + drawerPx} x2={x + w} y2={y + hangPx + drawerPx} stroke={color} strokeWidth="0.8" opacity="0.5" />
+              {basketContent(x, y + hangPx + drawerPx, w, basketHeightsCm, scale, color, onBasketClick)}
+            </>
+          )}
+        </>
+      );
+    }
+    default: return null;
+  }
+}
+
+
+function SpaceCard({ space, calc, expanded, onToggle, onUpdate, onRemove, removable }) {
+  const { built, modules } = calc;
+  const svgW = 680;
+  const marginX = 18, rightPad = 70, marginTop = 18;
+  const usableW = svgW - marginX - rightPad;
+  const maxCabinetH = 190; // px cap for the tallest a 240cm cabinet will ever draw
+
+  // single px-per-cm scale applied to BOTH axes, so the drawing is true to real proportions
+  const scale = Math.min(usableW / space.width, maxCabinetH / 240);
+  const cabinetH = scale * 240;
+  const drawnWidth = scale * space.width;
+  const originX = marginX + (usableW - drawnWidth) / 2; // center the (possibly narrower) run
+
+  const captionY = marginTop + cabinetH + 16;
+  const segDimY = captionY + 20;
+  const totalDimY = segDimY + 28;
+  const footerY = totalDimY + 22;
+  const svgH = footerY + 14;
+
+  let cursor = 0;
+
+  const handleModuleClick = (idx) => {
+    const m = modules[idx];
+    const nextCat = nextValidCategory(m.category, m.width);
+    const newDrawerOverrides = { ...space.drawerOverrides };
+    delete newDrawerOverrides[idx];
+    const newBasketOverrides = { ...space.basketOverrides };
+    delete newBasketOverrides[idx];
+    onUpdate({ overrides: { ...space.overrides, [idx]: nextCat }, drawerOverrides: newDrawerOverrides, basketOverrides: newBasketOverrides });
+  };
+
+  const getDrawerHeights = (idx, category) => resolveDrawerHeights(space, idx, category);
+  const setDrawerHeights = (idx, newArr) => {
+    onUpdate({ drawerOverrides: { ...space.drawerOverrides, [idx]: newArr } });
+  };
+  const cycleDrawer = (idx, pos, current) => {
+    const arr = [...current];
+    arr[pos] = nextDrawerHeight(arr[pos]);
+    setDrawerHeights(idx, arr);
+  };
+  const addDrawer = (idx, current, category) => {
+    const cap = realInteriorCm(category);
+    const basketSum = (getBasketHeights(idx, category) || []).reduce((s, v) => s + v, 0);
+    const sum = current.reduce((s, v) => s + v, 0);
+    if (sum + basketSum + 15 > cap) return; // no room left in this module
+    setDrawerHeights(idx, [...current, 15]);
+  };
+  const removeDrawer = (idx, current, category) => {
+    const minCount = category === "DRAWER" ? 1 : 0;
+    if (current.length <= minCount) return;
+    setDrawerHeights(idx, current.slice(0, -1));
+  };
+
+  const getBasketHeights = (idx, category) => resolveBasketHeights(space, idx, category);
+  const setBasketHeights = (idx, newArr) => {
+    onUpdate({ basketOverrides: { ...space.basketOverrides, [idx]: newArr } });
+  };
+  const cycleBasket = (idx, pos, current) => {
+    const arr = [...current];
+    arr[pos] = nextBasketHeight(arr[pos]);
+    setBasketHeights(idx, arr);
+  };
+  const addBasket = (idx, current, category) => {
+    const cap = realInteriorCm(category);
+    const drawerSum = (getDrawerHeights(idx, category) || []).reduce((s, v) => s + v, 0);
+    const sum = current.reduce((s, v) => s + v, 0);
+    if (sum + drawerSum + 15 > cap) return; // no room left in this module
+    setBasketHeights(idx, [...current, 15]);
+  };
+  const removeBasket = (idx, current) => {
+    if (current.length === 0) return;
+    setBasketHeights(idx, current.slice(0, -1));
+  };
+
+  // boundaries (in px, relative to originX) of every segment, for the tick-marked dimension chain
+  const boundaries = [0];
+  let acc = 0;
+  modules.forEach((m) => { acc += m.width; boundaries.push(acc); });
+  if (built.filler > 0) { acc += built.filler; boundaries.push(acc); }
+
+  const drawerEditRows = []; // collected while drawing the SVG below, rendered as controls after it
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e4ddc8", borderRadius: 12, marginBottom: 16, overflow: "hidden" }}>
+      <div
+        onClick={onToggle}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", cursor: "pointer", background: "#fbf9f3" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+          <input
+            value={space.name}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            placeholder="空間名稱，例如：主臥衣櫃"
+            style={{ fontSize: 15, fontWeight: 700, border: "none", background: "transparent", color: NAVY, width: "100%", outline: "none" }}
+          />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#5b6478" }}>${calc.subtotal.toLocaleString()}</span>
+          {removable && (
+            <button onClick={(e) => { e.stopPropagation(); onRemove(); }} style={{ border: "none", background: "none", color: "#b0453a", cursor: "pointer", padding: 4 }}>
+              <Trash2 size={16} />
+            </button>
+          )}
+          {expanded ? <ChevronUp size={18} color={NAVY} /> : <ChevronDown size={18} color={NAVY} />}
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{ padding: 16 }}>
+          <Section icon={<Ruler size={16} />} title="尺寸">
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+              <NumberField label="寬度 cm" value={space.width} onChange={(v) => onUpdate({ width: v, overrides: {}, drawerOverrides: {}, basketOverrides: {} })} min={40} max={600} />
+              <StaticField label="高度 cm" value={240} />
+              <StaticField label="深度 cm" value={60} />
+            </div>
+          </Section>
+
+          <Section icon={<Sparkles size={16} />} title="樣式">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {TEMPLATES.map((t) => (
+                <button key={t.id} onClick={() => onUpdate({ templateId: t.id, overrides: {}, drawerOverrides: {}, basketOverrides: {} })}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: space.templateId === t.id ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: space.templateId === t.id ? NAVY : "#fff", color: space.templateId === t.id ? "#fff" : NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </Section>
+
+          <Section title="立面配置圖" trailing={
+            <button onClick={() => onUpdate({ overrides: {}, drawerOverrides: {}, basketOverrides: {} })} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#5b6478", background: "none", border: "none", cursor: "pointer" }}>
+              <RotateCcw size={12} /> 重設
+            </button>
+          }>
+            <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ display: "block" }}>
+              <rect x={0} y={0} width={svgW} height={svgH} fill="#fdfcf8" rx={10} />
+
+              {modules.map((m, i) => {
+                const x = originX + cursor * scale;
+                const w = m.width * scale;
+                cursor += m.width;
+                const meta = CATEGORY_META[m.category];
+                const { valance: valanceCm, kick: kickCm } = zoneCm(m.category);
+                const valanceH = Math.min(cabinetH * 0.32, valanceCm * scale);
+                const kickH = Math.min(cabinetH * 0.1, kickCm * scale);
+                const interiorY = marginTop + valanceH + 3;
+                const interiorH = cabinetH - valanceH - kickH - 5;
+                const drawerHeights = getDrawerHeights(i, m.category);
+                const basketHeights = getBasketHeights(i, m.category);
+                if (drawerHeights) drawerEditRows.push({ idx: i, label: meta.label, heights: drawerHeights, basketHeights: basketHeights || [], category: m.category });
+                return (
+                  <g key={i} onClick={() => handleModuleClick(i)} style={{ cursor: "pointer" }}>
+                    {/* cabinet carcass */}
+                    <rect x={x} y={marginTop} width={w - 2} height={cabinetH} fill="#fff"
+                      stroke={NAVY} strokeWidth={1.2} rx={2} />
+                    {/* top valance box */}
+                    <rect x={x + 4} y={marginTop + 3} width={Math.max(w - 10, 2)} height={Math.max(valanceH - 4, 2)} fill="#f2ede0" stroke={NAVY} strokeWidth="0.8" rx="1" />
+                    {/* category interior illustration */}
+                    {drawInterior(m.category, x + 3, interiorY, w - 8, interiorH, NAVY, scale, drawerHeights, drawerHeights ? (pos) => cycleDrawer(i, pos, drawerHeights) : null, basketHeights, basketHeights ? (pos) => cycleBasket(i, pos, basketHeights) : null)}
+                    {/* kick base */}
+                    <rect x={x} y={marginTop + cabinetH - kickH} width={w - 2} height={kickH} fill="#e9e3d2" />
+                    {/* category label only (width now lives on the dimension line below) */}
+                    <text x={x + w / 2} y={captionY} textAnchor="middle" fontSize={10.5} fontWeight={700} fill={NAVY}>{meta.label}</text>
+                  </g>
+                );
+              })}
+
+              {built.filler > 0 && (
+                <rect x={originX + cursor * scale} y={marginTop} width={Math.max(built.filler * scale, 2)} height={cabinetH} fill="#e4ddc8" />
+              )}
+
+              {built.split && (
+                <line x1={originX + built.split.leftTotal * scale} y1={marginTop - 6} x2={originX + built.split.leftTotal * scale} y2={marginTop + cabinetH + 6} stroke={GOLD} strokeWidth={2} strokeDasharray="6 4" />
+              )}
+
+              {/* segment dimension chain — tick marks at every module boundary, cm between them */}
+              <g stroke="#8a8f9c" strokeWidth="1">
+                <line x1={originX} y1={segDimY} x2={originX + drawnWidth} y2={segDimY} />
+                {boundaries.map((b, i) => (
+                  <line key={i} x1={originX + b * scale} y1={segDimY - 3} x2={originX + b * scale} y2={segDimY + 3} />
+                ))}
+              </g>
+              {boundaries.slice(1).map((b, i) => {
+                const prev = boundaries[i];
+                const segCm = b - prev;
+                const cx = originX + ((prev + b) / 2) * scale;
+                if ((b - prev) * scale < 18) return null; // skip label if segment too narrow to fit text
+                return (
+                  <text key={i} x={cx} y={segDimY - 6} textAnchor="middle" fontSize={9} fill="#8a8f9c">{segCm}</text>
+                );
+              })}
+
+              {/* total width dimension */}
+              <g stroke={NAVY} strokeWidth="1.2">
+                <line x1={originX} y1={totalDimY} x2={originX + drawnWidth} y2={totalDimY} />
+                <line x1={originX} y1={totalDimY - 5} x2={originX} y2={totalDimY + 5} />
+                <line x1={originX + drawnWidth} y1={totalDimY - 5} x2={originX + drawnWidth} y2={totalDimY + 5} />
+              </g>
+              <text x={originX + drawnWidth / 2} y={totalDimY - 8} textAnchor="middle" fontSize={12} fontWeight={700} fill={NAVY}>{space.width}cm</text>
+
+              {/* vertical height dimension */}
+              <g stroke="#5b6478" strokeWidth="1">
+                <line x1={originX + drawnWidth + 22} y1={marginTop} x2={originX + drawnWidth + 22} y2={marginTop + cabinetH} />
+                <line x1={originX + drawnWidth + 18} y1={marginTop} x2={originX + drawnWidth + 26} y2={marginTop} />
+                <line x1={originX + drawnWidth + 18} y1={marginTop + cabinetH} x2={originX + drawnWidth + 26} y2={marginTop + cabinetH} />
+              </g>
+              <text x={originX + drawnWidth + 32} y={marginTop + cabinetH / 2 - 4} fontSize={11} fontWeight={700} fill="#5b6478">240</text>
+              <text x={originX + drawnWidth + 32} y={marginTop + cabinetH / 2 + 9} fontSize={8.5} fill="#8a8f9c">(含踢腳)</text>
+
+              <text x={svgW / 2} y={footerY} textAnchor="middle" fontSize={11} fill="#8a8f9c">正立面圖（依實際比例繪製）</text>
+            </svg>
+            <p style={{ fontSize: 12, color: "#8a8f9c", marginTop: 6 }}>點選櫃體背景可切換模組類型；點選抽屜面板可切換高度。CAD 下載請至「採購」頁籤。</p>
+
+            {drawerEditRows.length > 0 && (
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                {drawerEditRows.map((row) => (
+                  <div key={row.idx} style={{ display: "flex", flexDirection: "column", gap: 6, background: "#fbf9f3", border: "1px solid #eee7d6", borderRadius: 8, padding: "6px 8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#5b6478" }}>{row.label} #{row.idx + 1} 抽屜：</span>
+                      {row.heights.map((h, pos) => (
+                        <button key={pos} onClick={() => cycleDrawer(row.idx, pos, row.heights)}
+                          style={{ fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 6, border: `1px solid ${NAVY}`, background: "#fff", color: NAVY, cursor: "pointer" }}>
+                          {h}cm
+                        </button>
+                      ))}
+                      {row.heights.length === 0 && <span style={{ fontSize: 11, color: "#b0aa90" }}>（無）</span>}
+                      <button onClick={() => addDrawer(row.idx, row.heights, row.category)}
+                        style={{ fontSize: 12, fontWeight: 700, width: 22, height: 22, borderRadius: 6, border: "1px solid #d8d2c2", background: "#f6f3ec", color: NAVY, cursor: "pointer" }}>＋</button>
+                      <button onClick={() => removeDrawer(row.idx, row.heights, row.category)}
+                        style={{ fontSize: 12, fontWeight: 700, width: 22, height: 22, borderRadius: 6, border: "1px solid #d8d2c2", background: "#f6f3ec", color: NAVY, cursor: "pointer" }}>－</button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, paddingTop: 6, borderTop: "1px dashed #eee7d6" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#5b6478" }}>拉籃：</span>
+                      {row.basketHeights.map((h, pos) => (
+                        <button key={pos} onClick={() => cycleBasket(row.idx, pos, row.basketHeights)}
+                          style={{ fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 6, border: `1px solid ${NAVY}`, background: "#fff", color: NAVY, cursor: "pointer" }}>
+                          {h}cm
+                        </button>
+                      ))}
+                      {row.basketHeights.length === 0 && <span style={{ fontSize: 11, color: "#b0aa90" }}>（無）</span>}
+                      <button onClick={() => addBasket(row.idx, row.basketHeights, row.category)}
+                        style={{ fontSize: 12, fontWeight: 700, width: 22, height: 22, borderRadius: 6, border: "1px solid #d8d2c2", background: "#f6f3ec", color: NAVY, cursor: "pointer" }}>＋</button>
+                      <button onClick={() => removeBasket(row.idx, row.basketHeights)}
+                        style={{ fontSize: 12, fontWeight: 700, width: 22, height: 22, borderRadius: 6, border: "1px solid #d8d2c2", background: "#f6f3ec", color: NAVY, cursor: "pointer" }}>－</button>
+                    </div>
+                  </div>
+                ))}
+                <p style={{ fontSize: 11, color: "#8a8f9c", margin: 0 }}>點高度數字可切換（抽屜 15/25/35cm；拉籃 15/20/25cm）；＋／－ 增減數量。拉籃每個 +${BASKET_UNIT_PRICE.toLocaleString()}。</p>
+                {calc.basketCount > 0 && (
+                  <p style={{ fontSize: 12, fontWeight: 700, color: NAVY, margin: 0 }}>
+                    拉籃 {calc.basketCount} 個 × ${BASKET_UNIT_PRICE.toLocaleString()} = ${calc.basketPrice.toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
+          </Section>
+
+          <Section title="門片材質">
+            <SelectGrid options={DOORS} value={space.doorCode} onChange={(v) => onUpdate({ doorCode: v })} render={(d) => (
+              <>
+                <div style={{ fontWeight: 600 }}>{d.name}</div>
+                <div style={{ fontSize: 12, color: "#5b6478" }}>{d.price > 0 ? `+$${d.price.toLocaleString()} / 座` : "含基本價"}</div>
+              </>
+            )} />
+          </Section>
+
+          <Section title="板材顏色">
+            <select
+              value={space.colorCode}
+              onChange={(e) => onUpdate({ colorCode: e.target.value })}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #d8d2c2", fontSize: 14, color: NAVY, background: "#fff" }}
+            >
+              {MATERIAL_GRADES.map((g) => (
+                <optgroup key={g} label={`${g}色${colorSurchargeRate(g) > 0 ? `（加價 ${colorSurchargeRate(g) * 100}%）` : ""}`}>
+                  {MATERIAL_COLORS.filter((c) => c.grade === g).map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}（{c.code}）</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {calc.colorSurcharge > 0 && (
+              <p style={{ fontSize: 12, color: "#b0453a", marginTop: 6 }}>
+                {calc.color.name}（{calc.color.grade}色）板材加價 15%，＋${calc.colorSurcharge.toLocaleString()}
+              </p>
+            )}
+          </Section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MiniElevation({ space, calc }) {
+  const { modules } = calc;
+  const svgW = 500;
+  const marginX = 14, rightPad = 46, marginTop = 10;
+  const usableW = svgW - marginX - rightPad;
+  const maxCabinetH = 120;
+  const scale = Math.min(usableW / space.width, maxCabinetH / 240);
+  const cabinetH = scale * 240;
+  const drawnWidth = scale * space.width;
+  const originX = marginX + (usableW - drawnWidth) / 2;
+  const svgH = marginTop + cabinetH + 22;
+  let cursor = 0;
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ display: "block", background: "#fdfcf8", borderRadius: 8 }}>
+      {modules.map((m, i) => {
+        const x = originX + cursor * scale;
+        const w = m.width * scale;
+        cursor += m.width;
+        const { valance: valanceCm, kick: kickCm } = zoneCm(m.category);
+        const valanceH = Math.min(cabinetH * 0.32, valanceCm * scale);
+        const kickH = Math.min(cabinetH * 0.1, kickCm * scale);
+        const interiorY = marginTop + valanceH + 2;
+        const interiorH = cabinetH - valanceH - kickH - 4;
+        const drawerHeights = resolveDrawerHeights(space, i, m.category);
+        const basketHeights = resolveBasketHeights(space, i, m.category);
+        return (
+          <g key={i}>
+            <rect x={x} y={marginTop} width={w - 1.5} height={cabinetH} fill="#fff" stroke={NAVY} strokeWidth={1} rx={1.5} />
+            <rect x={x + 3} y={marginTop + 2} width={Math.max(w - 8, 1)} height={Math.max(valanceH - 3, 1)} fill="#f2ede0" stroke={NAVY} strokeWidth={0.6} />
+            {drawInterior(m.category, x + 2, interiorY, w - 6, interiorH, NAVY, scale, drawerHeights, null, basketHeights, null)}
+            <rect x={x} y={marginTop + cabinetH - kickH} width={w - 1.5} height={kickH} fill="#e9e3d2" />
+          </g>
+        );
+      })}
+      <text x={originX + drawnWidth / 2} y={marginTop + cabinetH + 15} textAnchor="middle" fontSize={9} fill="#8a8f9c">{space.width}cm</text>
+    </svg>
+  );
+}
+
+// shared bbox/viewBox setup for the room-outline plan drawings below
+function roomPlanGeometry(polygon, scaleCmPerPx) {
+  const cmPoints = polygon.map((p) => ({ x: p.x * scaleCmPerPx, y: p.y * scaleCmPerPx }));
+  const xs = cmPoints.map((p) => p.x), ys = cmPoints.map((p) => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const pad = 30;
+  const vbW = maxX - minX + pad * 2, vbH = maxY - minY + pad * 2;
+  const offX = -minX + pad, offY = -minY + pad;
+  const toSvg = (p) => ({ x: p.x + offX, y: p.y + offY });
+  const outlinePts = cmPoints.map((p) => `${p.x + offX},${p.y + offY}`).join(" ");
+  const cx = (maxX - minX) / 2 + offX, cy = (maxY - minY) / 2 + offY;
+  return { vbW, vbH, offX, offY, outlinePts, cx, cy, toSvg };
+}
+
+function polygonCentroid(points) {
+  return points.reduce((s, p) => ({ x: s.x + p.x / points.length, y: s.y + p.y / points.length }), { x: 0, y: 0 });
+}
+
+// Snap a cabinet-footprint rectangle's corners to the nearest vertex of the room's own traced
+// outline (the wall corners the user already identified) — simpler and more reliable than
+// re-analysing pixels, since we already have exact points for the walls.
+function snapRectToPolygonCorners(rectX, rectY, rectW, rectH, polygon, thresholdPx) {
+  if (!polygon || polygon.length === 0) return { x: rectX, y: rectY };
+  const corners = [
+    { x: rectX, y: rectY }, { x: rectX + rectW, y: rectY },
+    { x: rectX, y: rectY + rectH }, { x: rectX + rectW, y: rectY + rectH },
+  ];
+  let best = null, bestDist = thresholdPx;
+  corners.forEach((c) => {
+    polygon.forEach((v) => {
+      const d = Math.hypot(v.x - c.x, v.y - c.y);
+      if (d < bestDist) { bestDist = d; best = { dx: v.x - c.x, dy: v.y - c.y }; }
+    });
+  });
+  if (best) return { x: rectX + best.dx, y: rectY + best.dy };
+  return { x: rectX, y: rectY };
+}
+
+// A draggable top-down footprint of one 系統櫃 run (width × 60cm depth), placed over the floor
+// plan. Drag anywhere on it; on release its corners magnet-snap to the room's traced wall corners.
+// A tall (floor-to-ceiling) cabinet body is drawn as a square with both diagonals crossed (an
+// "X"); a low cabinet gets only one diagonal. Every module in this tool is a full-height 240cm
+// wardrobe unit, so today they all render as 高櫃 — the distinction is wired in for whenever a
+// low-cabinet category exists.
+function isTallModule() { return true; }
+
+function CabinetFootprint({ space, calc, position, rotation, scaleCmPerPx, roomPolygon, svgRef, naturalWidth, naturalHeight, onCommit, onToggleRotation }) {
+  const [dragPos, setDragPos] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef(null);
+  const latestPosRef = useRef(null);
+
+  const runLenPx = Math.max(space.width / scaleCmPerPx, 6);
+  const depthPx = Math.max(60 / scaleCmPerPx, 6);
+  const rotated = rotation === 90;
+  const totalW = rotated ? depthPx : runLenPx;
+  const totalH = rotated ? runLenPx : depthPx;
+  const pos = dragPos || position;
+
+  const clientToImageDelta = (dxClient, dyClient) => {
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = naturalWidth / rect.width, scaleY = naturalHeight / rect.height;
+    return { dx: dxClient * scaleX, dy: dyClient * scaleY };
+  };
+
+  // Window-level listeners while dragging — more reliable across browsers/touch devices than
+  // relying purely on the dragged element's own pointer capture, which some mobile webviews
+  // handle inconsistently once the finger moves outside the element's original hit area.
+  useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (e) => {
+      if (!dragStartRef.current) return;
+      const { dx, dy } = clientToImageDelta(e.clientX - dragStartRef.current.startClientX, e.clientY - dragStartRef.current.startClientY);
+      const next = { x: dragStartRef.current.startPos.x + dx, y: dragStartRef.current.startPos.y + dy };
+      latestPosRef.current = next;
+      setDragPos(next);
+    };
+    const handleUp = () => {
+      const finalPos = latestPosRef.current || position;
+      const snapped = snapRectToPolygonCorners(finalPos.x, finalPos.y, totalW, totalH, roomPolygon, 18);
+      setIsDragging(false);
+      dragStartRef.current = null;
+      latestPosRef.current = null;
+      setDragPos(null);
+      onCommit(snapped);
+    };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging]);
+
+  const onPointerDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragStartRef.current = { startClientX: e.clientX, startClientY: e.clientY, startPos: position };
+    latestPosRef.current = position;
+    setDragPos(position);
+    setIsDragging(true);
+  };
+
+  const handleRotateClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleRotation();
+  };
+
+  let cursorCm = 0;
+  const modules = (calc && calc.modules) || [{ width: space.width }];
+  const rotateBtnX = pos.x + totalW + 6, rotateBtnY = pos.y + 6;
+
+  return (
+    <g style={{ touchAction: "none" }}>
+      <g onPointerDown={onPointerDown} style={{ cursor: isDragging ? "grabbing" : "grab" }}>
+        {modules.map((m, i) => {
+          const lenPx = m.width / scaleCmPerPx;
+          const x0 = rotated ? pos.x : pos.x + cursorCm / scaleCmPerPx;
+          const y0 = rotated ? pos.y + cursorCm / scaleCmPerPx : pos.y;
+          const w = rotated ? depthPx : lenPx;
+          const h = rotated ? lenPx : depthPx;
+          cursorCm += m.width;
+          const tall = isTallModule(m.category);
+          return (
+            <g key={i}>
+              <rect x={x0} y={y0} width={w} height={h} fill={GOLD} fillOpacity="0.35" stroke={NAVY} strokeWidth="1.2" />
+              {tall ? (
+                <>
+                  <line x1={x0} y1={y0} x2={x0 + w} y2={y0 + h} stroke={NAVY} strokeWidth="1" />
+                  <line x1={x0 + w} y1={y0} x2={x0} y2={y0 + h} stroke={NAVY} strokeWidth="1" />
+                </>
+              ) : (
+                <line x1={x0} y1={y0} x2={x0 + w} y2={y0 + h} stroke={NAVY} strokeWidth="1" />
+              )}
+            </g>
+          );
+        })}
+        <text x={pos.x + totalW / 2} y={pos.y - 4} textAnchor="middle" fontSize={Math.min(depthPx * 0.4, 11)} fontWeight="700" fill={NAVY} stroke="#fff" strokeWidth="3" style={{ paintOrder: "stroke" }}>{space.name}</text>
+      </g>
+      <g onPointerDown={handleRotateClick} style={{ cursor: "pointer" }}>
+        <circle cx={rotateBtnX} cy={rotateBtnY} r={Math.max(totalH * 0.22, 8)} fill={NAVY} fillOpacity="0.85" />
+        <path
+          d={`M ${rotateBtnX - 4} ${rotateBtnY} a 4 4 0 1 1 1.2 2.8 M ${rotateBtnX - 4} ${rotateBtnY} l 0 -2.5 M ${rotateBtnX - 4} ${rotateBtnY} l 2.2 0.6`}
+          fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
+        />
+      </g>
+    </g>
+  );
+}
+
+/* ---------------------------------------------------------------
+   家具配置（簡化版）— 拖拉家具、旋轉、碰撞／超出房間邊界警告。
+   簡化說明：
+   - 只支援 0°／90° 旋轉（不是任意角度),所以碰撞判定用簡單的
+     軸對齊矩形（AABB）重疊測試就夠了,不需要完整的 SAT 碰撞演算法
+   - 沒有牆／門／窗物件,「超出房間」是用家具四個角是否都落在你
+     框選的房間輪廓內來判斷,不是真正的牆體碰撞
+   - 沒有 AI 自動配置、沒有動線淨空規則（clearance rules),都是
+     PRD 裡才有的後端功能，這裡沒有伺服器可以做
+----------------------------------------------------------------*/
+const FURNITURE_LIBRARY = [
+  { code: "BED_S", category: "臥室", name: "單人床", width: 100, depth: 200 },
+  { code: "BED_120", category: "臥室", name: "120床", width: 120, depth: 200 },
+  { code: "BED_150", category: "臥室", name: "150雙人床", width: 150, depth: 200 },
+  { code: "BED_180", category: "臥室", name: "180雙人床", width: 180, depth: 200 },
+  { code: "BED_KING", category: "臥室", name: "King Size", width: 193, depth: 203 },
+  { code: "SOFA_1", category: "客廳", name: "單人沙發", width: 90, depth: 90 },
+  { code: "SOFA_2", category: "客廳", name: "雙人沙發", width: 150, depth: 90 },
+  { code: "SOFA_3", category: "客廳", name: "三人沙發", width: 210, depth: 90 },
+  { code: "SOFA_L", category: "客廳", name: "L型沙發", width: 250, depth: 150 },
+  { code: "TV_CONSOLE", category: "客廳", name: "電視櫃", width: 150, depth: 40 },
+  { code: "TV", category: "客廳", name: "電視", width: 150, depth: 10 },
+  { code: "COFFEE_TABLE", category: "客廳", name: "茶几", width: 100, depth: 50 },
+  { code: "TABLE_2", category: "餐廳", name: "2人餐桌", width: 80, depth: 80 },
+  { code: "TABLE_4", category: "餐廳", name: "4人餐桌", width: 140, depth: 80 },
+  { code: "TABLE_6", category: "餐廳", name: "6人餐桌", width: 180, depth: 90 },
+  { code: "CHAIR_DINING", category: "餐廳", name: "餐椅", width: 45, depth: 50 },
+  { code: "DESK", category: "書房", name: "書桌", width: 120, depth: 60 },
+  { code: "CHAIR_DESK", category: "書房", name: "書桌椅", width: 50, depth: 50 },
+  { code: "WARDROBE_MOVABLE", category: "收納", name: "活動衣櫃", width: 100, depth: 60 },
+  { code: "DRESSER", category: "收納", name: "斗櫃", width: 80, depth: 45 },
+  { code: "SHOE_CABINET", category: "玄關", name: "鞋櫃", width: 90, depth: 35 },
+  { code: "FRIDGE", category: "家電", name: "冰箱", width: 70, depth: 70 },
+  { code: "WASHER", category: "家電", name: "洗衣機", width: 60, depth: 60 },
+  { code: "DRYER", category: "家電", name: "烘衣機", width: 60, depth: 60 },
+  { code: "TOILET", category: "衛浴", name: "馬桶", width: 38, depth: 65 },
+  { code: "SINK", category: "衛浴", name: "洗手台", width: 60, depth: 45 },
+  { code: "BATHTUB", category: "衛浴", name: "浴缸", width: 160, depth: 70 },
+  { code: "SHOWER", category: "衛浴", name: "淋浴區", width: 90, depth: 90 },
+];
+const FURNITURE_CATEGORIES = [...new Set(FURNITURE_LIBRARY.map((f) => f.category))];
+
+function pointInPolygon(pt, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
+    const intersect = (yi > pt.y) !== (yj > pt.y) && pt.x < ((xj - xi) * (pt.y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+function rectsOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+function furnitureRect(item, scaleCmPerPx) {
+  const item2 = FURNITURE_LIBRARY.find((f) => f.code === item.code) || { width: 60, depth: 60 };
+  const wCm = item.rotation === 90 ? item2.depth : item2.width;
+  const hCm = item.rotation === 90 ? item2.width : item2.depth;
+  return { x: item.x, y: item.y, w: wCm / scaleCmPerPx, h: hCm / scaleCmPerPx, name: item2.name };
+}
+
+function FurnitureItem({ item, position, rotation, scaleCmPerPx, roomPolygon, svgRef, naturalWidth, naturalHeight, hasCollision, onCommit, onToggleRotation, onRemove }) {
+  const [dragPos, setDragPos] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef(null);
+  const latestPosRef = useRef(null);
+
+  const lib = FURNITURE_LIBRARY.find((f) => f.code === item.code) || { name: item.code, width: 60, depth: 60 };
+  const wCm = rotation === 90 ? lib.depth : lib.width;
+  const hCm = rotation === 90 ? lib.width : lib.depth;
+  const w = Math.max(wCm / scaleCmPerPx, 6);
+  const h = Math.max(hCm / scaleCmPerPx, 6);
+  const pos = dragPos || position;
+
+  const clientToImageDelta = (dxClient, dyClient) => {
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = naturalWidth / rect.width, scaleY = naturalHeight / rect.height;
+    return { dx: dxClient * scaleX, dy: dyClient * scaleY };
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (e) => {
+      if (!dragStartRef.current) return;
+      const { dx, dy } = clientToImageDelta(e.clientX - dragStartRef.current.startClientX, e.clientY - dragStartRef.current.startClientY);
+      const next = { x: dragStartRef.current.startPos.x + dx, y: dragStartRef.current.startPos.y + dy };
+      latestPosRef.current = next;
+      setDragPos(next);
+    };
+    const handleUp = () => {
+      const finalPos = latestPosRef.current || position;
+      const snapped = roomPolygon ? snapRectToPolygonCorners(finalPos.x, finalPos.y, w, h, roomPolygon, 14) : finalPos;
+      setIsDragging(false);
+      dragStartRef.current = null;
+      latestPosRef.current = null;
+      setDragPos(null);
+      onCommit(snapped);
+    };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging]);
+
+  const onPointerDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragStartRef.current = { startClientX: e.clientX, startClientY: e.clientY, startPos: position };
+    latestPosRef.current = position;
+    setDragPos(position);
+    setIsDragging(true);
+  };
+
+  const color = hasCollision ? "#b0453a" : "#4A7C7C";
+
+  return (
+    <g style={{ touchAction: "none" }}>
+      <g onPointerDown={onPointerDown} style={{ cursor: isDragging ? "grabbing" : "grab" }}>
+        <rect x={pos.x} y={pos.y} width={w} height={h} fill={color} fillOpacity={hasCollision ? 0.35 : 0.3} stroke={color} strokeWidth="1.4" rx="2" />
+        <text x={pos.x + w / 2} y={pos.y + h / 2 + 3} textAnchor="middle" fontSize={Math.min(h * 0.35, 10)} fontWeight="700" fill={color}>{lib.name}</text>
+      </g>
+      <g onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); onToggleRotation(); }} style={{ cursor: "pointer" }}>
+        <circle cx={pos.x + w + 7} cy={pos.y + 7} r="7" fill={NAVY} fillOpacity="0.85" />
+        <path d={`M ${pos.x + w + 3} ${pos.y + 7} a 4 4 0 1 1 1.2 2.8 M ${pos.x + w + 3} ${pos.y + 7} l 0 -2.5 M ${pos.x + w + 3} ${pos.y + 7} l 2.2 0.6`}
+          fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+      <g onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(); }} style={{ cursor: "pointer" }}>
+        <circle cx={pos.x + w + 7} cy={pos.y + h - 7} r="7" fill="#b0453a" fillOpacity="0.85" />
+        <line x1={pos.x + w + 4} y1={pos.y + h - 10} x2={pos.x + w + 10} y2={pos.y + h - 4} stroke="#fff" strokeWidth="1.3" strokeLinecap="round" />
+        <line x1={pos.x + w + 10} y1={pos.y + h - 10} x2={pos.x + w + 4} y2={pos.y + h - 4} stroke="#fff" strokeWidth="1.3" strokeLinecap="round" />
+      </g>
+    </g>
+  );
+}
+
+function FurnitureLayoutCanvas({ room, floorPlan, setFloorPlan }) {
+  const svgRef = useRef(null);
+  const [activeCategory, setActiveCategory] = useState(FURNITURE_CATEGORIES[0]);
+  const polygon = (floorPlan.roomPolygons || {})[room.code];
+  const scale = floorPlan.scaleCmPerPx;
+  const items = ((floorPlan.furniture || {})[room.code]) || [];
+
+  if (!floorPlan.imageDataUrl || !scale || !polygon) {
+    return <p style={{ fontSize: 12, color: "#8a8f9c" }}>請先到「案場平面圖」校正比例尺,並用「從平面圖框選」描出這個空間的範圍,才能配置家具。</p>;
+  }
+
+  const xs = polygon.map((p) => p.x), ys = polygon.map((p) => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const pad = 40;
+  const vbW = maxX - minX + pad * 2, vbH = maxY - minY + pad * 2;
+
+  const setItems = (next) => {
+    setFloorPlan((prev) => ({ ...prev, furniture: { ...(prev.furniture || {}), [room.code]: next } }));
+  };
+  const addItem = (code) => {
+    const lib = FURNITURE_LIBRARY.find((f) => f.code === code);
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const wPx = lib.width / scale, hPx = lib.depth / scale;
+    const newItem = { id: Date.now(), code, x: cx - wPx / 2, y: cy - hPx / 2, rotation: 0 };
+    setItems([...items, newItem]);
+  };
+  const updateItem = (id, patch) => setItems(items.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const removeItem = (id) => setItems(items.filter((it) => it.id !== id));
+
+  // collision detection: furniture-vs-furniture (AABB overlap) + furniture extending past the room outline
+  const rects = items.map((it) => ({ id: it.id, ...furnitureRect(it, scale) }));
+  const collidingIds = new Set();
+  const outOfBoundsIds = new Set();
+  for (let i = 0; i < rects.length; i++) {
+    const r = rects[i];
+    const corners = [{ x: r.x, y: r.y }, { x: r.x + r.w, y: r.y }, { x: r.x, y: r.y + r.h }, { x: r.x + r.w, y: r.y + r.h }];
+    if (!corners.every((c) => pointInPolygon(c, polygon))) outOfBoundsIds.add(r.id);
+    for (let j = i + 1; j < rects.length; j++) {
+      if (rectsOverlap(r, rects[j])) { collidingIds.add(r.id); collidingIds.add(rects[j].id); }
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ position: "relative", width: "100%", borderRadius: 8, overflow: "hidden", border: "1px solid #e4ddc8" }}>
+        <img src={floorPlan.imageDataUrl} alt="平面圖" style={{ width: "100%", display: "block" }} />
+        <svg ref={svgRef} viewBox={`0 0 ${floorPlan.naturalWidth} ${floorPlan.naturalHeight}`}
+          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
+          <polygon points={polygon.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" stroke={NAVY} strokeWidth="2" opacity="0.8" />
+          {items.map((it) => (
+            <FurnitureItem
+              key={it.id} item={it} position={{ x: it.x, y: it.y }} rotation={it.rotation} scaleCmPerPx={scale}
+              roomPolygon={polygon} svgRef={svgRef} naturalWidth={floorPlan.naturalWidth} naturalHeight={floorPlan.naturalHeight}
+              hasCollision={collidingIds.has(it.id) || outOfBoundsIds.has(it.id)}
+              onCommit={(pos) => updateItem(it.id, pos)}
+              onToggleRotation={() => updateItem(it.id, { rotation: it.rotation === 90 ? 0 : 90 })}
+              onRemove={() => removeItem(it.id)}
+            />
+          ))}
+        </svg>
+      </div>
+
+      {(collidingIds.size > 0 || outOfBoundsIds.size > 0) && (
+        <div style={{ marginTop: 8, background: "#fdf2f0", border: "1px solid #e0c4bd", borderRadius: 8, padding: "8px 10px" }}>
+          {collidingIds.size > 0 && <p style={{ fontSize: 12, color: "#b0453a", margin: "0 0 4px" }}>⚠ 有家具彼此重疊,請拖開調整。</p>}
+          {outOfBoundsIds.size > 0 && <p style={{ fontSize: 12, color: "#b0453a", margin: 0 }}>⚠ 有家具超出房間範圍。</p>}
+        </div>
+      )}
+
+      <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {FURNITURE_CATEGORIES.map((cat) => (
+          <button key={cat} onClick={() => setActiveCategory(cat)}
+            style={{ padding: "6px 12px", borderRadius: 7, border: activeCategory === cat ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: activeCategory === cat ? NAVY : "#fff", color: activeCategory === cat ? "#fff" : NAVY, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            {cat}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+        {FURNITURE_LIBRARY.filter((f) => f.category === activeCategory).map((f) => (
+          <button key={f.code} onClick={() => addItem(f.code)} style={smallBtnStyle}>
+            <Plus size={11} /> {f.name}（{f.width}×{f.depth}）
+          </button>
+        ))}
+      </div>
+      <p style={{ fontSize: 10.5, color: "#b0aa90", marginTop: 8 }}>
+        點家具可拖曳；右上圓點旋轉 90 度、右下圓點刪除,放開拖曳會吸附房間角點。紅色表示與其他家具重疊或超出房間範圍,僅供動線參考,不是精確碰撞檢查（沒有牆、門、窗物件）。
+      </p>
+    </div>
+  );
+}
+
+// 天花板圖／木地板圖 — 用「整張」平面圖，每個已框選過的空間依施作內容套用不同 hatch，
+// 有系統櫃的空間會疊上可拖曳、可磁吸牆角的櫃體平面示意。
+function CombinedPlanView({ floorPlan, roomResults, setFloorPlan, planKind }) {
+  const svgRef = useRef(null);
+  const roomPolygons = floorPlan.roomPolygons || {};
+  const beamPaths = floorPlan.beamPaths || {};
+  const scale = floorPlan.scaleCmPerPx;
+  const cabinetPositions = floorPlan.cabinetPositions || {};
+  const cabinetRotations = floorPlan.cabinetRotations || {};
+  const showCabinets = planKind === "cabinet";
+
+  const commitCabinetPosition = (spaceId, pos) => {
+    setFloorPlan((prev) => ({ ...prev, cabinetPositions: { ...(prev.cabinetPositions || {}), [spaceId]: pos } }));
+  };
+  const toggleCabinetRotation = (spaceId) => {
+    setFloorPlan((prev) => {
+      const current = (prev.cabinetRotations || {})[spaceId] || 0;
+      return { ...prev, cabinetRotations: { ...(prev.cabinetRotations || {}), [spaceId]: current === 0 ? 90 : 0 } };
+    });
+  };
+
+  const anyTraced = roomResults.some((r) => roomPolygons[r.room.code]);
+  if (!floorPlan.imageDataUrl || !scale || !anyTraced) {
+    return <p style={{ fontSize: 12, color: "#8a8f9c" }}>尚未有已框選範圍的空間，請先到「報價」頁籤用「從平面圖框選」描出至少一個空間。</p>;
+  }
+
+  return (
+    <div>
+      <div style={{ position: "relative", width: "100%", borderRadius: 8, overflow: "hidden", border: "1px solid #e4ddc8" }}>
+        <img src={floorPlan.imageDataUrl} alt="平面圖" style={{ width: "100%", display: "block" }} />
+        <svg ref={svgRef} viewBox={`0 0 ${floorPlan.naturalWidth} ${floorPlan.naturalHeight}`}
+          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
+          <defs>
+            {roomResults.map(({ room }) => roomPolygons[room.code] && (
+              <clipPath id={`${planKind}-clip-${room.code}`} key={room.code}>
+                <polygon points={roomPolygons[room.code].map((p) => `${p.x},${p.y}`).join(" ")} />
+              </clipPath>
+            ))}
+          </defs>
+
+          {roomResults.map(({ room, work, workCalc }) => {
+            const poly = roomPolygons[room.code];
+            if (!poly) return null;
+            const pts = poly.map((p) => `${p.x},${p.y}`).join(" ");
+            const centroid = polygonCentroid(poly);
+
+            if (showCabinets) {
+              return (
+                <g key={room.code}>
+                  <polygon points={pts} fill="none" stroke={NAVY} strokeWidth="1.3" opacity="0.6" />
+                  <text x={centroid.x} y={centroid.y} textAnchor="middle" fontSize="17" fontWeight="700" fill={NAVY} stroke="#fff" strokeWidth="4" style={{ paintOrder: "stroke" }}>{room.name}</text>
+                </g>
+              );
+            }
+
+            const active = planKind === "ceiling" ? workCalc.ceiling.code !== "NONE" : work.floorEnabled;
+            const hatchLines = [];
+            const spacing = 16;
+            if (planKind === "ceiling" && workCalc.ceiling.code === "FLAT") {
+              for (let d = -floorPlan.naturalHeight; d < floorPlan.naturalWidth; d += spacing) {
+                hatchLines.push(<line key={d} x1={d} y1={0} x2={d + floorPlan.naturalHeight} y2={floorPlan.naturalHeight} stroke={GOLD} strokeWidth="1.4" opacity="0.75" />);
+              }
+            }
+            if (planKind === "floor" && work.floorEnabled) {
+              const vertical = work.floorDirection !== "PARALLEL";
+              if (vertical) {
+                for (let x = 0; x < floorPlan.naturalWidth; x += spacing) hatchLines.push(<line key={x} x1={x} y1={0} x2={x} y2={floorPlan.naturalHeight} stroke="#4A7C7C" strokeWidth="1.4" opacity="0.75" />);
+              } else {
+                for (let y = 0; y < floorPlan.naturalHeight; y += spacing) hatchLines.push(<line key={y} x1={0} y1={y} x2={floorPlan.naturalWidth} y2={y} stroke="#4A7C7C" strokeWidth="1.4" opacity="0.75" />);
+              }
+            }
+            const beamPts = planKind === "ceiling" && workCalc.ceiling.code === "BEAM_WRAP" ? beamPaths[room.code] : null;
+
+            return (
+              <g key={room.code}>
+                <polygon points={pts} fill={active ? "none" : "#fff"} fillOpacity={active ? 0 : 0.001} stroke={NAVY} strokeWidth={active ? 2.2 : 1} strokeDasharray={active ? "0" : "5 4"} opacity={active ? 0.95 : 0.4} />
+                {hatchLines.length > 0 && <g clipPath={`url(#${planKind}-clip-${room.code})`}>{hatchLines}</g>}
+                {beamPts && beamPts.length >= 2 && (
+                  <polyline points={beamPts.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" stroke="#b0453a" strokeWidth="6" strokeDasharray="16 9" strokeLinecap="round" />
+                )}
+                <text x={centroid.x} y={centroid.y} textAnchor="middle" fontSize="17" fontWeight="700" fill={NAVY} stroke="#fff" strokeWidth="4" style={{ paintOrder: "stroke" }}>{room.name}</text>
+              </g>
+            );
+          })}
+
+          {showCabinets && roomResults.flatMap(({ room, roomSpaces }) =>
+            roomSpaces.map(({ space, calc }) => {
+              const poly = roomPolygons[room.code];
+              const centroid = poly ? polygonCentroid(poly) : { x: 40, y: 40 };
+              const defaultPos = { x: centroid.x - (space.width / scale) / 2, y: centroid.y - (60 / scale) / 2 };
+              const pos = cabinetPositions[space.id] || defaultPos;
+              const rotation = cabinetRotations[space.id] || 0;
+              return (
+                <CabinetFootprint
+                  key={space.id} space={space} calc={calc} position={pos} rotation={rotation} scaleCmPerPx={scale} roomPolygon={poly}
+                  svgRef={svgRef} naturalWidth={floorPlan.naturalWidth} naturalHeight={floorPlan.naturalHeight}
+                  onCommit={(newPos) => commitCabinetPosition(space.id, newPos)}
+                  onToggleRotation={() => toggleCabinetRotation(space.id)}
+                />
+              );
+            })
+          )}
+        </svg>
+      </div>
+      <p style={{ fontSize: 10.5, color: "#b0aa90", marginTop: 6 }}>
+        {planKind === "ceiling" && "金色斜線＝平頂天花板（平釘）範圍；紅色粗虛線＝包樑走向；淺色虛線框＝未施作天花板的空間。"}
+        {planKind === "floor" && "藍綠色平行線＝地板鋪設方向（僅示意，門的實際位置未記錄，施工前請現場確認）；淺色虛線框＝未施作地板的空間。"}
+        {planKind === "cabinet" && "金色方塊為系統櫃平面示意（一個方型＝一個櫃體桶身,打叉表示高櫃),可拖曳移動,放開會自動吸附最近的牆角；右上角深藍色圓點可點擊旋轉 90 度。"}
+      </p>
+    </div>
+  );
+}
+
+function ContractView({ projectInfo, roomResults, managementFee, tax, transport, selectedProtection, selectedCleaning, sharedTotal, paintType, paintWork, paintMaterial, baseColor, floorPlan, setFloorPlan, grandSubtotal, grandTotal }) {
+  const materialName = (PAINT_MATERIALS.find((m) => m.code === paintMaterial) || {}).name || "";
+  const baseColorInfo = BASE_PAINT_COLORS.find((c) => c.code === baseColor) || BASE_PAINT_COLORS[0];
+  const [sections, setSections] = useState({ quote: true, contract: true, ceiling: true, floor: true, cabinet: true });
+  const toggleSection = (key) => setSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const ceilingRooms = roomResults.filter((r) => r.workCalc.ceilingPrice > 0);
+  const floorRooms = roomResults.filter((r) => r.work.floorEnabled);
+  const allSpaces = roomResults.flatMap((r) => r.roomSpaces);
+
+  const SECTION_DEFS = [
+    { key: "quote", name: "估價單" },
+    { key: "contract", name: "合約" },
+    { key: "ceiling", name: "天花板圖" },
+    { key: "floor", name: "木地板圖" },
+    { key: "cabinet", name: "系統櫃圖" },
+  ];
+
+  return (
+    <div>
+      <div className="no-print" style={{ background: "#fff", border: "1px solid #e4ddc8", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 10 }}>PDF 要包含哪些內容？</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 12 }}>
+          {SECTION_DEFS.map((s) => (
+            <label key={s.key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+              <input type="checkbox" checked={sections[s.key]} onChange={() => toggleSection(s.key)} />
+              {s.name}
+            </label>
+          ))}
+        </div>
+        <button onClick={() => window.print()} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 8, border: "none", background: NAVY, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+          <Download size={15} /> 產生 PDF（開啟列印，選「另存為 PDF」）
+        </button>
+      </div>
+
+      <div style={{ background: "#fff", border: "1px solid #e4ddc8", borderRadius: 12, padding: 20 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: NAVY, margin: "0 0 4px" }}>報價暨簡易圖面確認單</h2>
+        <p style={{ fontSize: 13, color: "#5b6478", margin: "0 0 16px" }}>
+          {projectInfo.customerName && `客戶：${projectInfo.customerName}　`}
+          {projectInfo.phone && `電話：${projectInfo.phone}　`}
+          {projectInfo.siteName && `案場：${projectInfo.siteName}`}
+        </p>
+
+        {sections.quote && (
+          <div style={{ marginBottom: 28, paddingBottom: 20, borderBottom: "2px solid #eee7d6" }}>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: NAVY, margin: "0 0 12px" }}>估價單</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#5b6478", marginBottom: 16 }}>
+              <span>全室油漆：{materialName}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                底色 <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 4, background: baseColorInfo.hex, border: "1px solid #d8d2c2" }} /> {baseColorInfo.name}
+              </span>
+            </div>
+
+            {sharedTotal > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: NAVY, margin: "0 0 8px" }}>共同工程</h4>
+                <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+                  <tbody>
+                    {selectedProtection.map((p) => (
+                      <tr key={p.code}><td style={{ padding: "4px 0" }}>保護工程－{p.name}（{p.qty}{p.unit}）</td><td style={{ textAlign: "right" }}>${p.subtotal.toLocaleString()}</td></tr>
+                    ))}
+                    {selectedCleaning.map((c) => (
+                      <tr key={c.code}><td style={{ padding: "4px 0" }}>清潔工程－{c.name}（{c.qty}{c.unit}）</td><td style={{ textAlign: "right" }}>${c.subtotal.toLocaleString()}</td></tr>
+                    ))}
+                    {paintWork.price > 0 && (
+                      <tr><td style={{ padding: "4px 0" }}>全室油漆－{paintWork.paint.name}</td><td style={{ textAlign: "right" }}>${paintWork.price.toLocaleString()}</td></tr>
+                    )}
+                    <tr><td style={{ padding: "6px 0", fontWeight: 700 }}>共同工程小計</td><td style={{ textAlign: "right", fontWeight: 700 }}>${sharedTotal.toLocaleString()}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {roomResults.length === 0 && <p style={{ fontSize: 13, color: "#8a8f9c" }}>尚未選擇任何空間，請先到「報價」頁籤設定。</p>}
+
+            {roomResults.map(({ room, work, workCalc, roomSpaces, roomTotal }) => (
+              <div key={room.code} style={{ marginBottom: 14 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: NAVY, margin: "0 0 6px" }}>{room.name}</h4>
+                <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+                  <tbody>
+                    {workCalc.ceilingPrice > 0 && (
+                      <tr><td style={{ padding: "4px 0" }}>天花板－{workCalc.ceiling.name}（{workCalc.ceiling.code === "BEAM_WRAP" ? `${work.beamLengthChi}尺` : `${work.areaPing}坪`}）</td><td style={{ textAlign: "right" }}>${workCalc.ceilingPrice.toLocaleString()}</td></tr>
+                    )}
+                    {workCalc.curtainPrice > 0 && (
+                      <tr><td style={{ padding: "4px 0" }}>窗簾盒（{work.curtainBoxLengthChi}尺，歸屬天花板工程）</td><td style={{ textAlign: "right" }}>${workCalc.curtainPrice.toLocaleString()}</td></tr>
+                    )}
+                    {work.accentEnabled && (
+                      <tr><td colSpan="2" style={{ padding: "4px 0", color: "#5b6478" }}>
+                        跳色：{(ACCENT_COLORS_16.find((c) => c.code === work.accentColorCode) || {}).name}（{work.accentColorCode}）
+                      </td></tr>
+                    )}
+                    {workCalc.downlightPrice > 0 && (
+                      <tr><td style={{ padding: "4px 0" }}>崁燈 × {work.downlightCount}盞</td><td style={{ textAlign: "right" }}>${workCalc.downlightPrice.toLocaleString()}</td></tr>
+                    )}
+                    {workCalc.floorPrice > 0 && (
+                      <tr><td style={{ padding: "4px 0" }}>地板－{FLOOR_PRODUCT.name}（{work.areaPing}坪，{(FLOOR_DIRECTIONS.find((d) => d.code === work.floorDirection) || {}).name}）</td><td style={{ textAlign: "right" }}>${workCalc.floorPrice.toLocaleString()}</td></tr>
+                    )}
+                    {roomSpaces.map(({ space, calc }) => (
+                      <tr key={space.id}><td style={{ padding: "4px 0" }}>系統櫃－{space.name}（寬{space.width}cm）</td><td style={{ textAlign: "right" }}>${calc.subtotal.toLocaleString()}</td></tr>
+                    ))}
+                    {(work.curtainItems || []).map((it) => {
+                      const typeName = (CURTAIN_TYPES.find((t) => t.code === it.type) || {}).name || it.type;
+                      return (
+                        <tr key={it.id}><td style={{ padding: "4px 0" }}>窗簾－{typeName}（長{it.lengthCm}×寬{it.widthCm}cm{it.model ? `，${it.model}` : ""}）</td><td style={{ textAlign: "right" }}>${it.price.toLocaleString()}</td></tr>
+                      );
+                    })}
+                    <tr><td style={{ padding: "6px 0", fontWeight: 700 }}>空間小計</td><td style={{ textAlign: "right", fontWeight: 700 }}>${roomTotal.toLocaleString()}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            ))}
+
+            <table style={{ width: "100%", fontSize: 14, borderCollapse: "collapse", marginTop: 10 }}>
+              <tbody>
+                <tr><td style={{ padding: "4px 0" }}>運送</td><td style={{ textAlign: "right" }}>${transport.price.toLocaleString()}</td></tr>
+                <tr><td style={{ padding: "6px 0", fontWeight: 700 }}>小計</td><td style={{ textAlign: "right", fontWeight: 700 }}>${grandSubtotal.toLocaleString()}</td></tr>
+                <tr><td style={{ padding: "4px 0" }}>工程管理費 (8%)</td><td style={{ textAlign: "right" }}>${managementFee.toLocaleString()}</td></tr>
+                <tr><td style={{ padding: "4px 0" }}>稅金 (5%)</td><td style={{ textAlign: "right" }}>${tax.toLocaleString()}</td></tr>
+                <tr><td style={{ padding: "10px 0", fontWeight: 800, fontSize: 18, color: NAVY }}>總價</td><td style={{ textAlign: "right", fontWeight: 800, fontSize: 18, color: NAVY }}>${grandTotal.toLocaleString()}</td></tr>
+              </tbody>
+            </table>
+            <p style={{ fontSize: 11, color: "#b0aa90", marginTop: 10 }}>各項單價均為示意價格，請依實際合約價格更新。</p>
+          </div>
+        )}
+
+        {sections.contract && (
+          <div style={{ marginBottom: 28, paddingBottom: 20, borderBottom: "2px solid #eee7d6" }}>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: NAVY, margin: "0 0 12px" }}>合約</h3>
+            <p style={{ fontSize: 11, color: "#b0453a", marginBottom: 10 }}>以下為制式範本條款，非正式法律文件，正式簽約前請律師或專業人士審閱。</p>
+            <div style={{ fontSize: 13, lineHeight: 2, color: NAVY }}>
+              <p>甲方（業主）：{projectInfo.customerName || "＿＿＿＿＿＿"}　　聯絡電話：{projectInfo.phone || "＿＿＿＿＿＿"}</p>
+              <p>乙方（承攬人）：狸樂聚　　案場地址：{projectInfo.siteName || "＿＿＿＿＿＿"}</p>
+              <p>一、工程總價：新台幣 ${grandTotal.toLocaleString()} 元整（詳細項目如估價單所列）。</p>
+              <p>二、付款方式：簽約 ＿＿％、進場開工 ＿＿％、工程過半 ＿＿％、完工驗收 ＿＿％。</p>
+              <p>三、預定工期：自 ＿＿＿＿年＿＿月＿＿日 起，至 ＿＿＿＿年＿＿月＿＿日 止，共 ＿＿ 個工作天。</p>
+              <p>四、保固期間：自驗收完成日起算 ＿＿ 年，非人為損壞之施工瑕疵由乙方負責修復。</p>
+              <p>五、其他約定事項：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</p>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 40 }}>
+                <div>甲方簽名：＿＿＿＿＿＿＿＿</div>
+                <div>乙方簽名：＿＿＿＿＿＿＿＿</div>
+              </div>
+              <p style={{ marginTop: 20 }}>簽約日期：＿＿＿＿年＿＿月＿＿日</p>
+            </div>
+          </div>
+        )}
+
+        {sections.ceiling && (
+          <div style={{ marginBottom: 28, paddingBottom: 20, borderBottom: "2px solid #eee7d6" }}>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: NAVY, margin: "0 0 12px" }}>天花板圖</h3>
+            {ceilingRooms.length === 0 && <p style={{ fontSize: 13, color: "#8a8f9c" }}>目前沒有任何空間施作天花板。</p>}
+            {floorPlan && <CombinedPlanView floorPlan={floorPlan} roomResults={roomResults} setFloorPlan={setFloorPlan} planKind="ceiling" />}
+            {!floorPlan && <p style={{ fontSize: 13, color: "#8a8f9c" }}>尚未上傳案場平面圖。</p>}
+          </div>
+        )}
+
+        {sections.floor && (
+          <div style={{ marginBottom: 28, paddingBottom: 20, borderBottom: "2px solid #eee7d6" }}>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: NAVY, margin: "0 0 12px" }}>木地板圖</h3>
+            {floorRooms.length === 0 && <p style={{ fontSize: 13, color: "#8a8f9c" }}>目前沒有任何空間施作木地板。</p>}
+            {floorPlan && <CombinedPlanView floorPlan={floorPlan} roomResults={roomResults} setFloorPlan={setFloorPlan} planKind="floor" />}
+            {!floorPlan && <p style={{ fontSize: 13, color: "#8a8f9c" }}>尚未上傳案場平面圖。</p>}
+          </div>
+        )}
+
+        {sections.cabinet && (
+          <div>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: NAVY, margin: "0 0 12px" }}>系統櫃圖</h3>
+            {allSpaces.length === 0 && <p style={{ fontSize: 13, color: "#8a8f9c" }}>目前沒有配置任何系統櫃。</p>}
+
+            <h4 style={{ fontSize: 14, fontWeight: 700, color: NAVY, margin: "0 0 8px" }}>平面配置圖</h4>
+            {floorPlan && <CombinedPlanView floorPlan={floorPlan} roomResults={roomResults} setFloorPlan={setFloorPlan} planKind="cabinet" />}
+            {!floorPlan && <p style={{ fontSize: 13, color: "#8a8f9c" }}>尚未上傳案場平面圖。</p>}
+
+            <h4 style={{ fontSize: 14, fontWeight: 700, color: NAVY, margin: "20px 0 8px" }}>各櫃立面圖</h4>
+            {allSpaces.map(({ space, calc }) => (
+              <div key={space.id} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, color: "#5b6478", marginBottom: 4 }}>{space.name}｜立面示意圖</div>
+                <MiniElevation space={space} calc={calc} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const TRADES = [
+  { code: "CARPENTRY", name: "木工" },
+  { code: "PAINT", name: "油漆" },
+  { code: "CABINET", name: "系統櫃" },
+  { code: "FLOOR", name: "木地板" },
+  { code: "ELECTRICAL", name: "水電" },
+  { code: "CLEANING", name: "清潔" },
+];
+
+const ACCESS_METHODS = [
+  { code: "OWNER", name: "聯絡業主" },
+  { code: "DESIGNER", name: "聯絡設計師" },
+  { code: "MANAGEMENT", name: "鑰匙在管理室" },
+  { code: "PASSWORD", name: "密碼鎖" },
+  { code: "OTHER", name: "其他" },
+];
+
+function formatAccessMethod(siteAccess, projectInfo) {
+  const method = ACCESS_METHODS.find((m) => m.code === siteAccess.accessMethod) || ACCESS_METHODS[0];
+  if (method.code === "OWNER") return `聯絡業主${projectInfo.phone ? `（電話：${projectInfo.phone}）` : ""}`;
+  if (method.code === "DESIGNER") return "聯絡設計師";
+  if (method.code === "MANAGEMENT") return "鑰匙在管理室";
+  if (method.code === "PASSWORD") return `密碼鎖（密碼：${siteAccess.accessPassword || "（尚未填寫）"}）`;
+  if (method.code === "OTHER") return `其他：${siteAccess.accessNote || "（尚未填寫）"}`;
+  return method.name;
+}
+
+function buildSiteHeader(tradeName, projectInfo, siteAccess, entryDate) {
+  const lines = [`【${tradeName}採購單／進場資訊】`];
+  if (projectInfo.customerName) lines.push(`客戶：${projectInfo.customerName}`);
+  lines.push(`案場地址：${projectInfo.siteName || "（尚未填寫）"}`);
+  lines.push(`進場時間：${entryDate || "（尚未填寫）"}`);
+  lines.push(`開門方式：${formatAccessMethod(siteAccess, projectInfo)}`);
+  lines.push(`大樓作業時間：${siteAccess.workingHours || "（尚未填寫）"}`);
+  lines.push("");
+  return lines;
+}
+
+function buildCarpentryPO(projectInfo, siteAccess, entryDate, roomResults) {
+  const lines = buildSiteHeader("木工", projectInfo, siteAccess, entryDate);
+  const items = roomResults.filter((r) => r.workCalc.ceilingPrice > 0 || r.work.curtainBoxLengthChi > 0);
+  if (items.length === 0) { lines.push("（尚未設定天花板／窗簾盒等木工項目）"); return lines.join("\n"); }
+  items.forEach((r) => {
+    if (r.workCalc.ceilingPrice > 0) {
+      if (r.workCalc.ceiling.code === "BEAM_WRAP") lines.push(`・${r.room.name} 天花板－包樑 ${r.work.beamLengthChi}尺`);
+      else lines.push(`・${r.room.name} 天花板－${r.workCalc.ceiling.name} ${r.work.areaPing}坪`);
+    }
+    if (r.work.curtainBoxLengthChi > 0) lines.push(`・${r.room.name} 窗簾盒 ${r.work.curtainBoxLengthChi}尺`);
+  });
+  return lines.join("\n");
+}
+
+function buildPaintPO(projectInfo, siteAccess, entryDate, roomResults, paintType, paintWork, totalAreaPing, paintMaterial, baseColor) {
+  const lines = buildSiteHeader("油漆", projectInfo, siteAccess, entryDate);
+  const materialName = (PAINT_MATERIALS.find((m) => m.code === paintMaterial) || {}).name || "";
+  const baseColorInfo = BASE_PAINT_COLORS.find((c) => c.code === baseColor) || BASE_PAINT_COLORS[0];
+  lines.push(`全室材料：${materialName}`);
+  lines.push(`全室底色：${baseColorInfo.name}（${baseColorInfo.code}）`);
+  lines.push(`全室工法：${paintWork.paint.name}${paintWork.price > 0 ? `（總坪數 ${totalAreaPing}坪，小計 $${paintWork.price.toLocaleString()}）` : ""}`);
+  lines.push("");
+  const accentRooms = roomResults.filter((r) => r.work.accentEnabled);
+  if (accentRooms.length === 0 && paintWork.price === 0) { lines.push("（尚未設定油漆施作）"); return lines.join("\n"); }
+  if (accentRooms.length > 0) {
+    lines.push("〈跳色〉");
+    accentRooms.forEach((r) => {
+      const accent = ACCENT_COLORS_16.find((c) => c.code === r.work.accentColorCode);
+      lines.push(`・${r.room.name}：${accent ? accent.name : ""}（${r.work.accentColorCode}）`);
+    });
+  }
+  return lines.join("\n");
+}
+
+function buildCabinetPO(projectInfo, siteAccess, entryDate, results) {
+  const lines = buildSiteHeader("系統櫃", projectInfo, siteAccess, entryDate);
+  const moduleCounts = {};
+  const doorSet = new Set(), colorSet = new Set();
+  const drawerTotals = {}, basketTotals = {};
+  results.forEach(({ space, calc }) => {
+    calc.modules.forEach((m, i) => {
+      const key = `${m.data.code} ${m.data.name} ${m.width}cm`;
+      moduleCounts[key] = (moduleCounts[key] || 0) + 1;
+      (resolveDrawerHeights(space, i, m.category) || []).forEach((h) => { drawerTotals[h] = (drawerTotals[h] || 0) + 1; });
+      (resolveBasketHeights(space, i, m.category) || []).forEach((h) => { basketTotals[h] = (basketTotals[h] || 0) + 1; });
+    });
+    doorSet.add(calc.door.name);
+    colorSet.add(`${calc.color.code} ${calc.color.name}`);
+  });
+  if (Object.keys(moduleCounts).length === 0) {
+    lines.push("（尚未配置任何系統櫃）");
+    return lines.join("\n");
+  }
+  lines.push("〈櫃體模組〉");
+  Object.entries(moduleCounts).forEach(([k, v]) => lines.push(`・${k} × ${v}`));
+  lines.push("");
+  lines.push(`〈門片〉${[...doorSet].join("、")}`);
+  lines.push(`〈板材色號〉${[...colorSet].join("、")}`);
+  if (Object.keys(drawerTotals).length) {
+    lines.push("");
+    lines.push("〈抽屜〉");
+    Object.entries(drawerTotals).forEach(([h, q]) => lines.push(`・${h}cm × ${q}`));
+  }
+  if (Object.keys(basketTotals).length) {
+    lines.push("");
+    lines.push("〈拉籃〉");
+    Object.entries(basketTotals).forEach(([h, q]) => lines.push(`・${h}cm × ${q}`));
+  }
+  return lines.join("\n");
+}
+
+function buildFloorPO(projectInfo, siteAccess, entryDate, roomResults) {
+  const lines = buildSiteHeader("木地板", projectInfo, siteAccess, entryDate);
+  lines.push(`〈材料〉${FLOOR_PRODUCT.name}`);
+  let totalPing = 0;
+  const floorRooms = roomResults.filter((r) => r.work.floorEnabled && r.work.areaPing > 0);
+  if (floorRooms.length === 0) {
+    lines.push("（尚未設定任何地板施作坪數）");
+    return lines.join("\n");
+  }
+  floorRooms.forEach((r) => {
+    const dirName = (FLOOR_DIRECTIONS.find((d) => d.code === r.work.floorDirection) || {}).name || "";
+    lines.push(`・${r.room.name}：${r.work.areaPing}坪（鋪設走向：${dirName}）`);
+    totalPing += r.work.areaPing;
+  });
+  lines.push("");
+  lines.push(`總坪數：${totalPing}坪`);
+  lines.push(`預估材料費：$${Math.round(totalPing * FLOOR_PRODUCT.pricePerPing).toLocaleString()}`);
+  return lines.join("\n");
+}
+
+function buildElectricalPO(projectInfo, siteAccess, entryDate, roomResults) {
+  const lines = buildSiteHeader("水電", projectInfo, siteAccess, entryDate);
+  const items = roomResults.filter((r) => (r.work.downlightCount || 0) > 0);
+  if (items.length === 0) { lines.push("（尚未設定任何空間的崁燈數量）"); return lines.join("\n"); }
+  lines.push("〈崁燈〉");
+  let total = 0;
+  items.forEach((r) => { lines.push(`・${r.room.name} × ${r.work.downlightCount}盞`); total += r.work.downlightCount; });
+  lines.push("");
+  lines.push(`總數量：${total}盞`);
+  return lines.join("\n");
+}
+
+function buildCleaningPO(projectInfo, siteAccess, entryDate, selectedCleaning) {
+  const lines = buildSiteHeader("清潔", projectInfo, siteAccess, entryDate);
+  if (selectedCleaning.length === 0) { lines.push("（尚未勾選清潔項目）"); return lines.join("\n"); }
+  selectedCleaning.forEach((c) => lines.push(`・${c.name} × ${c.qty}${c.unit}`));
+  return lines.join("\n");
+}
+
+const lineBtnStyle = {
+  display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8,
+  border: "none", background: "#06C755", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+};
+
+function TradePOCard({ title, contacts, poText, filename, entryDate, onEntryDateChange, children }) {
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e4ddc8", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: NAVY, margin: "0 0 4px" }}>{title}採購單</h3>
+      <p style={{ fontSize: 12, color: "#8a8f9c", margin: "0 0 10px" }}>{contacts}（假設對象，請自行替換）</p>
+      <label style={{ display: "block", fontSize: 12, color: "#5b6478", marginBottom: 4 }}>進場時間</label>
+      <input type="date" value={entryDate || ""} onChange={(e) => onEntryDateChange(e.target.value)}
+        style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid #d8d2c2", fontSize: 13, marginBottom: 10 }} />
+      {children}
+      <pre style={{ whiteSpace: "pre-wrap", fontSize: 12.5, background: "#fbf9f3", padding: 10, borderRadius: 8, lineHeight: 1.7, margin: "10px 0 0" }}>{poText}</pre>
+      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+        <button onClick={() => shareTextToLine(poText)} style={lineBtnStyle}><Share2 size={14} /> 分享至LINE</button>
+        <button onClick={() => downloadTextFile(filename, poText, "text/plain")} style={smallBtnStyle}><Download size={13} /> 下載</button>
+      </div>
+    </div>
+  );
+}
+
+function ProcurementView({ projectInfo, roomResults, results, paintType, paintWork, totalAreaPing, paintMaterial, baseColor, selectedCleaning, siteAccess, setSiteAccess, tradeSchedule, setTradeEntryDate }) {
+  const carpentryPO = buildCarpentryPO(projectInfo, siteAccess, tradeSchedule.CARPENTRY, roomResults);
+  const paintPO = buildPaintPO(projectInfo, siteAccess, tradeSchedule.PAINT, roomResults, paintType, paintWork, totalAreaPing, paintMaterial, baseColor);
+  const cabinetPO = buildCabinetPO(projectInfo, siteAccess, tradeSchedule.CABINET, results);
+  const floorPO = buildFloorPO(projectInfo, siteAccess, tradeSchedule.FLOOR, roomResults);
+  const electricalPO = buildElectricalPO(projectInfo, siteAccess, tradeSchedule.ELECTRICAL, roomResults);
+  const cleaningPO = buildCleaningPO(projectInfo, siteAccess, tradeSchedule.CLEANING, selectedCleaning);
+
+  return (
+    <div>
+      <div style={{ background: "#fff", border: "1px solid #e4ddc8", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: NAVY, margin: "0 0 10px" }}>工地資訊（全部工班共用）</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 12 }}>
+          <TextField label="案場地址" value={projectInfo.siteName} onChange={() => {}} placeholder="（請至「報價」頁籤的客戶資料填寫）" />
+          <TextField label="大樓作業時間" value={siteAccess.workingHours} onChange={(v) => setSiteAccess((p) => ({ ...p, workingHours: v }))} placeholder="例如：08:00–17:00" />
+        </div>
+        <div style={{ fontSize: 12, color: "#5b6478", marginBottom: 6 }}>開門方式</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+          {ACCESS_METHODS.map((m) => (
+            <button key={m.code} onClick={() => setSiteAccess((p) => ({ ...p, accessMethod: m.code }))}
+              style={{ padding: "8px 14px", borderRadius: 8, border: siteAccess.accessMethod === m.code ? `2px solid ${NAVY}` : "1px solid #d8d2c2", background: siteAccess.accessMethod === m.code ? NAVY : "#fff", color: siteAccess.accessMethod === m.code ? "#fff" : NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {m.name}
+            </button>
+          ))}
+        </div>
+        {siteAccess.accessMethod === "PASSWORD" && (
+          <TextField label="密碼" value={siteAccess.accessPassword} onChange={(v) => setSiteAccess((p) => ({ ...p, accessPassword: v }))} placeholder="例如：1234#" />
+        )}
+        {siteAccess.accessMethod === "OTHER" && (
+          <TextField label="備註" value={siteAccess.accessNote} onChange={(v) => setSiteAccess((p) => ({ ...p, accessNote: v }))} placeholder="請說明開門方式" />
+        )}
+      </div>
+
+      <TradePOCard title="木工" contacts="施工班：木工師傅" poText={carpentryPO} filename="木工採購單.txt"
+        entryDate={tradeSchedule.CARPENTRY} onEntryDateChange={(v) => setTradeEntryDate("CARPENTRY", v)} />
+
+      <TradePOCard title="油漆" contacts="施工班：油漆師傅" poText={paintPO} filename="油漆採購單.txt"
+        entryDate={tradeSchedule.PAINT} onEntryDateChange={(v) => setTradeEntryDate("PAINT", v)} />
+
+      <TradePOCard title="水電" contacts="施工班：水電師傅" poText={electricalPO} filename="水電採購單.txt"
+        entryDate={tradeSchedule.ELECTRICAL} onEntryDateChange={(v) => setTradeEntryDate("ELECTRICAL", v)} />
+
+      <TradePOCard title="木地板" contacts="材料商：C｜施工工班：D" poText={floorPO} filename="木地板採購單.txt"
+        entryDate={tradeSchedule.FLOOR} onEntryDateChange={(v) => setTradeEntryDate("FLOOR", v)} />
+
+      <div style={{ background: "#fff", border: "1px solid #e4ddc8", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: NAVY, margin: "0 0 4px" }}>系統櫃採購單</h3>
+        <p style={{ fontSize: 12, color: "#8a8f9c", margin: "0 0 10px" }}>材料商：A｜施工師傅：B（假設對象，請自行替換）</p>
+        <label style={{ display: "block", fontSize: 12, color: "#5b6478", marginBottom: 4 }}>進場時間</label>
+        <input type="date" value={tradeSchedule.CABINET || ""} onChange={(e) => setTradeEntryDate("CABINET", e.target.value)}
+          style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid #d8d2c2", fontSize: 13, marginBottom: 10 }} />
+        <pre style={{ whiteSpace: "pre-wrap", fontSize: 12.5, background: "#fbf9f3", padding: 10, borderRadius: 8, lineHeight: 1.7, margin: "0 0 10px" }}>{cabinetPO}</pre>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+          <button onClick={() => shareTextToLine(cabinetPO)} style={lineBtnStyle}><Share2 size={14} /> 分享至LINE（材料商A）</button>
+          <button onClick={() => shareTextToLine(cabinetPO)} style={lineBtnStyle}><Share2 size={14} /> 分享至LINE（師傅B）</button>
+          <button onClick={() => downloadTextFile("系統櫃採購單.txt", cabinetPO, "text/plain")} style={smallBtnStyle}><Download size={13} /> 下載</button>
+        </div>
+        {results.length === 0 ? (
+          <p style={{ fontSize: 12, color: "#8a8f9c" }}>尚未配置任何系統櫃，沒有 CAD 圖可下載。</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: NAVY }}>各系統櫃 CAD 圖（DXF）</div>
+            {results.map(({ space, calc }) => (
+              <div key={space.id} style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #e4ddc8", borderRadius: 8, padding: "8px 10px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{space.name}</span>
+                <button onClick={() => exportSpaceToDxf(space, calc)} style={smallBtnStyle}><Download size={13} /> 下載 CAD</button>
+                <button onClick={() => shareSpaceDxf(space, calc)} style={{ ...lineBtnStyle, padding: "6px 10px" }}><Share2 size={13} /> 分享</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <TradePOCard title="清潔" contacts="清潔公司" poText={cleaningPO} filename="清潔採購單.txt"
+        entryDate={tradeSchedule.CLEANING} onEntryDateChange={(v) => setTradeEntryDate("CLEANING", v)} />
+
+      <p style={{ fontSize: 11, color: "#b0aa90", marginTop: 10 }}>「分享至LINE」會開啟 LINE 讓你自行選擇要傳送的對象 — 網頁無法自動指定特定聯絡人，需自行於 LINE 內選取。</p>
+    </div>
+  );
+}
+
+function computeProfitCategories(roomResults, results, selectedProtection, selectedCleaning, transport, managementFee, tax, paintWork) {
+  const cabinetItems = results.map(({ space, calc }) => {
+    const cabinetCost = calc.modules.reduce((s, m) => s + (m.data.cost || 0), 0);
+    const doorEligible = calc.modules.filter((m) => m.category !== "OPEN" && m.category !== "DISPLAY").length;
+    const doorCost = doorEligible * (calc.door.cost || 0);
+    const knownCost = cabinetCost + doorCost;
+    const extras = calc.subtotal - calc.cabinetPrice - calc.doorPrice; // colorSurcharge + basketPrice — no cost data
+    return { label: space.name, sale: calc.subtotal, cost: knownCost, hasCost: false, note: extras > 0 ? "不含顏色加價／拉籃的成本（無資料）" : null };
+  });
+
+  // 窗簾盒歸屬天花板工程（木工施作),連同天花板一起列
+  const ceilingItems = [];
+  roomResults.forEach((r) => {
+    if (r.workCalc.ceilingPrice > 0) ceilingItems.push({ label: `${r.room.name}－${r.workCalc.ceiling.name}`, sale: r.workCalc.ceilingPrice, cost: 0, hasCost: false });
+    if (r.workCalc.curtainPrice > 0) ceilingItems.push({ label: `${r.room.name}－窗簾盒`, sale: r.workCalc.curtainPrice, cost: 0, hasCost: false });
+  });
+  const floorItems = roomResults.filter((r) => r.workCalc.floorPrice > 0).map((r) => ({ label: r.room.name, sale: r.workCalc.floorPrice, cost: 0, hasCost: false }));
+  // 油漆是全室一筆（不分空間),跳色仍逐空間列出
+  const paintItems = [];
+  if (paintWork.price > 0) paintItems.push({ label: `全室－${paintWork.paint.name}`, sale: paintWork.price, cost: 0, hasCost: false });
+  roomResults.forEach((r) => {
+    if (r.work.accentEnabled) {
+      const accent = ACCENT_COLORS_16.find((c) => c.code === r.work.accentColorCode);
+      paintItems.push({ label: `${r.room.name}－跳色（${accent ? accent.name : ""}）`, sale: 0, cost: 0, hasCost: false, note: "跳色目前未單獨計價" });
+    }
+  });
+  const electricalItems = roomResults.filter((r) => (r.work.downlightCount || 0) > 0).map((r) => ({ label: `${r.room.name}（${r.work.downlightCount}盞）`, sale: r.workCalc.downlightPrice, cost: 0, hasCost: false }));
+
+  // 窗簾（不含窗簾盒 — 窗簾盒歸在天花板／木工）
+  const curtainItems = [];
+  roomResults.forEach((r) => {
+    (r.work.curtainItems || []).forEach((it) => {
+      const typeName = (CURTAIN_TYPES.find((t) => t.code === it.type) || {}).name || it.type;
+      const hasCost = it.cost != null;
+      curtainItems.push({ label: `${r.room.name}－${typeName}`, sale: it.price, cost: hasCost ? it.cost : 0, hasCost });
+    });
+  });
+
+  const sharedItems = selectedProtection.map((p) => ({ label: `保護工程－${p.name}（${p.qty}${p.unit}）`, sale: p.subtotal, cost: 0, hasCost: false }));
+  selectedCleaning.forEach((c) => sharedItems.push({ label: `清潔工程－${c.name}（${c.qty}${c.unit}）`, sale: c.subtotal, cost: 0, hasCost: false }));
+
+  const buildCategory = (name, items) => {
+    const sale = items.reduce((s, it) => s + it.sale, 0);
+    const cost = items.reduce((s, it) => s + it.cost, 0);
+    const hasFullCost = items.length > 0 && items.every((it) => it.hasCost);
+    const hasAnyCost = items.some((it) => it.hasCost);
+    return { name, items, sale, cost, hasFullCost, hasAnyCost };
+  };
+
+  return [
+    buildCategory("天花板", ceilingItems),
+    buildCategory("油漆", paintItems),
+    buildCategory("水電（崁燈）", electricalItems),
+    buildCategory("木地板", floorItems),
+    buildCategory("系統櫃", cabinetItems),
+    buildCategory("窗簾", curtainItems),
+    buildCategory("共同工程", sharedItems),
+    buildCategory("運送", [{ label: transport.name, sale: transport.price, cost: 0, hasCost: false }]),
+    buildCategory("工程管理費＋稅金", [
+      { label: "工程管理費 (8%)", sale: managementFee, cost: 0, hasCost: false },
+      { label: "稅金 (5%)", sale: tax, cost: 0, hasCost: false },
+    ]),
+  ];
+}
+
+function ProfitView({ roomResults, results, selectedProtection, selectedCleaning, transport, managementFee, tax, paintWork }) {
+  const [expanded, setExpanded] = useState({});
+  const categories = computeProfitCategories(roomResults, results, selectedProtection, selectedCleaning, transport, managementFee, tax, paintWork);
+  const toggle = (name) => setExpanded((prev) => ({ ...prev, [name]: !prev[name] }));
+
+  const grandSale = categories.reduce((s, c) => s + c.sale, 0);
+  const grandCost = categories.reduce((s, c) => s + c.cost, 0);
+  const grandProfit = grandSale - grandCost;
+
+  return (
+    <div>
+      <div style={{ background: "#fff", border: "1px solid #eee7d6", borderRadius: 8, padding: "10px 14px", marginBottom: 14 }}>
+        <p style={{ fontSize: 11.5, color: "#b0453a", margin: 0 }}>
+          除了系統櫃（櫃體＋門片）跟布簾外,其餘項目目前都沒有成本資料（天花板／地板／油漆／崁燈／窗簾盒／保護清潔／運送／安裝費都只有售價,沒有成本),所以下面顯示的「成本」在這些項目是 $0,「利潤」等於售價 — 不是真的沒有成本,是還沒有成本資料。之後有成本數字我可以幫你補進去。
+        </p>
+      </div>
+
+      <div style={{ background: NAVY, color: "#fff", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <div style={{ fontSize: 11, letterSpacing: 1, color: GOLD, fontWeight: 700, marginBottom: 4 }}>整案</div>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          <div><div style={{ fontSize: 11, opacity: 0.7 }}>售價</div><div style={{ fontSize: 20, fontWeight: 800 }}>${grandSale.toLocaleString()}</div></div>
+          <div><div style={{ fontSize: 11, opacity: 0.7 }}>成本</div><div style={{ fontSize: 20, fontWeight: 800 }}>${grandCost.toLocaleString()}</div></div>
+          <div><div style={{ fontSize: 11, opacity: 0.7 }}>利潤</div><div style={{ fontSize: 20, fontWeight: 800, color: GOLD }}>${grandProfit.toLocaleString()}</div></div>
+        </div>
+      </div>
+
+      {categories.map((cat) => (
+        <div key={cat.name} style={{ background: "#fff", border: "1px solid #e4ddc8", borderRadius: 10, marginBottom: 10, overflow: "hidden" }}>
+          <div onClick={() => toggle(cat.name)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", cursor: "pointer", background: "#fbf9f3" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{cat.name}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 12, color: "#5b6478" }}>售 ${cat.sale.toLocaleString()}　成 ${cat.cost.toLocaleString()}{!cat.hasFullCost && cat.items.length > 0 ? "＊" : ""}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>利 ${(cat.sale - cat.cost).toLocaleString()}</span>
+              {expanded[cat.name] ? <ChevronUp size={16} color={NAVY} /> : <ChevronDown size={16} color={NAVY} />}
+            </div>
+          </div>
+          {expanded[cat.name] && (
+            <div style={{ padding: "8px 14px 12px" }}>
+              {cat.items.length === 0 && <p style={{ fontSize: 12, color: "#8a8f9c", margin: 0 }}>目前沒有項目。</p>}
+              {cat.items.map((it, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: i < cat.items.length - 1 ? "1px solid #f0ece0" : "none" }}>
+                  <div>
+                    <div style={{ fontSize: 13, color: NAVY }}>{it.label}</div>
+                    {it.note && <div style={{ fontSize: 10.5, color: "#b0aa90" }}>{it.note}</div>}
+                  </div>
+                  <div style={{ textAlign: "right", fontSize: 12, color: "#5b6478" }}>
+                    售 ${it.sale.toLocaleString()}　成 ${it.cost.toLocaleString()}{!it.hasCost ? "＊" : ""}　利 ${(it.sale - it.cost).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+      <p style={{ fontSize: 10.5, color: "#b0aa90", marginTop: 4 }}>＊表示該項目沒有成本資料，成本以 $0 計，利潤僅供參考。</p>
+    </div>
+  );
+}
+
+function Section({ icon, title, trailing, children }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700 }}>{icon}{title}</div>
+        {trailing}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function TextField({ label, value, onChange, placeholder, icon, full }) {
+  return (
+    <label style={{ fontSize: 13, gridColumn: full ? "1 / -1" : "auto" }}>
+      <div style={{ marginBottom: 4, color: "#5b6478", display: "flex", alignItems: "center", gap: 4 }}>{icon}{label}</div>
+      <input value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
+        style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: "1px solid #d8d2c2", fontSize: 14, color: NAVY, background: "#fff" }} />
+    </label>
+  );
+}
+
+function NumberField({ label, value, onChange, min, max }) {
+  // Free typing needs an uncommitted local buffer — clamping on every keystroke (e.g. while the
+  // field is briefly empty or below `min` mid-edit) was snapping the value back and blocking input.
+  const [text, setText] = useState(String(value));
+  useEffect(() => { setText(String(value)); }, [value]);
+
+  const commit = (raw) => {
+    const v = Number(raw);
+    if (raw.trim() !== "" && !Number.isNaN(v)) {
+      const clamped = Math.min(max, Math.max(min, v));
+      setText(String(clamped));
+      if (clamped !== value) onChange(clamped);
+    } else {
+      setText(String(value));
+    }
+  };
+
+  return (
+    <label style={{ fontSize: 13 }}>
+      <div style={{ marginBottom: 4, color: "#5b6478" }}>{label}</div>
+      <input
+        type="number"
+        inputMode="numeric"
+        value={text}
+        min={min}
+        max={max}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.target.blur(); } }}
+        style={{ width: 100, padding: "8px 10px", borderRadius: 8, border: "1px solid #d8d2c2", fontSize: 15, fontWeight: 700, color: NAVY }}
+      />
+    </label>
+  );
+}
+
+function StaticField({ label, value }) {
+  return (
+    <div style={{ fontSize: 13 }}>
+      <div style={{ marginBottom: 4, color: "#5b6478" }}>{label}</div>
+      <div style={{ width: 100, padding: "8px 10px", borderRadius: 8, border: "1px solid #eee7d6", background: "#f0ece0", fontSize: 15, fontWeight: 700, color: "#8a8060" }}>{value}</div>
+    </div>
+  );
+}
+
+function SelectGrid({ options, value, onChange, render }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 8 }}>
+      {options.map((o) => (
+        <button key={o.code} onClick={() => onChange(o.code)}
+          style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, border: value === o.code ? `2px solid ${NAVY}` : "1px solid #e4ddc8", background: "#fff", cursor: "pointer" }}>
+          {render(o)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Stepper({ value, onChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <button onClick={() => onChange(Math.max(0, value - 1))} style={btnStyle}>−</button>
+      <span style={{ fontSize: 13, fontWeight: 700, width: 16, textAlign: "center" }}>{value}</span>
+      <button onClick={() => onChange(value + 1)} style={btnStyle}>+</button>
+    </div>
+  );
+}
+
+const btnStyle = { width: 22, height: 22, borderRadius: 6, border: "1px solid #d8d2c2", background: "#f6f3ec", cursor: "pointer", fontSize: 14, lineHeight: "1" };
+
+function PriceLine({ label, value, bold, big }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: big ? 18 : 13, fontWeight: bold ? 800 : 500, marginBottom: 6, color: bold ? "#fff" : "rgba(255,255,255,0.75)" }}>
+      <span>{label}</span>
+      <span>${value.toLocaleString()}</span>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
